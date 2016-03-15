@@ -541,16 +541,20 @@ We adopt and extend the scheme developed by [1] for tracking an aggregation of e
 
 Where: 
 
+%\begin{eqnarray*}
+%q_C(x) &=& \frac{P(x)}{E_{max}}\eta(x)\frac{1}{60} \\
+%P(x) &=& \begin{cases} 
+      %50 & x/E_{max} < 0.8 \\
+      %-860(x/E_{max}) + 738 & 0.8 \leq x/E_{max} < 0.85 \\
+      %-55(x/E_{max}) + 53.75 & 0.85 \leq x/E_{max} < 0.95 \\
+      %1.5 & 0.95 \leq x/E_{max}
+   %\end{cases}  \\
+  %\eta(x) &=& ??? \\
+  %q_D(x) &=& \frac{-20}{E_{max}}\frac{1}{60}
+%\end{eqnarray*}
 \begin{eqnarray*}
-q_C(x) &=& \frac{P(x)}{E_{max}}\eta(x)\frac{1}{60} \\
-P(x) &=& \begin{cases} 
-      50 & x/E_{max} < 0.8 \\
-      -860(x/E_{max}) + 738 & 0.8 \leq x/E_{max} < 0.85 \\
-      -55(x/E_{max}) + 53.75 & 0.85 \leq x/E_{max} < 0.95 \\
-      1.5 & 0.95 \leq x/E_{max}
-   \end{cases}  \\
-  \eta(x) &=& ??? \\
-  q_D(x) &=& \frac{-20}{E_{max}}\frac{1}{60}
+q_C(x) &=& \frac{50}{E_{max}}\eta(x)\frac{1}{60} \\
+q_D(x) &=& \frac{-20}{E_{max}}\frac{1}{60}
 \end{eqnarray*}
 
 The model is now spatially disaggregated, so the three PDE's characterizing the distribution of vehicles in charging, discharging, and idle states are indexed by $i$ for each node in the system. 
@@ -559,17 +563,18 @@ Secondly, new flow terms are specified which capture the transport of vehicles, 
 
 The flows must be constrained through the optimization scheme such that departures from a node $i$ to node $j$ are equivalent to the arrivals of vehicles from $i$ to $j$ at a future time and SOE corresponding to the travel time and energy requirements of that trip. Finally, the distinction between trips with and without passengers becomes critical in the context of an economic optimization that places monetary value on transporting people over moving empty vehicles.
 
+%The charging rate defined by $P(x)$ is illustrated in Figure \ref{fig:dcFastRate}. The function is assumed to be piecewise linear and it rapidly transforms after an SOC of 80\% from a fast charge to a Level 2 charge (7kW) and then declines again to a trickle charge at an SOC of 95\%.
 The charging rate defined by $P(x)$ is illustrated in Figure \ref{fig:dcFastRate}. The function is assumed to be piecewise linear and it rapidly transforms after an SOC of 80\% from a fast charge to a Level 2 charge (7kW) and then declines again to a trickle charge at an SOC of 95\%.
 
 % plot(seq(0,1,by=.01),c(rep(50,80),-860*seq(.8,.84,by=.01)+738,-55*seq(.85,.94,by=.01)+53.75,rep(1.5,6)),type='l',xlab="SOC",ylab="Power (kW)",main="DC Fast Charging Rate")
 % grid()
 % points(seq(0,1,by=.01),c(rep(50,80),-860*seq(.8,.84,by=.01)+738,-55*seq(.85,.94,by=.01)+53.75,rep(1.5,6)),type='l')
-\begin{figure}[!htbp]
-\centering
-\includegraphics[width=3.0in]{dcFastRate} 
-\caption{The function $P(x)$, or the charge rate of a DC Fast charger.}
-\label{fig:dcFastRate}
-\end{figure}
+%\begin{figure}[!htbp]
+%\centering
+%\includegraphics[width=3.0in]{dcFastRate} 
+%\caption{The function $P(x)$, or the charge rate of a DC Fast charger.}
+%\label{fig:dcFastRate}
+%\end{figure}
 
 \subsection{Optimization Formulation}
 
