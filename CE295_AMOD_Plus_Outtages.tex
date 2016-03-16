@@ -456,7 +456,7 @@
 
 \begin{abstract}
 %\boldmath
-Abstract here.
+The era of fully autonomous, electrified taxi fleets is rapidly approaching, and with it the opportunity to innovate myriad on-demand services that extend beyond the realm of human mobility. This project envisions a future where autonomous EV fleets can be dispatched as both as a taxi service and a source of on-demand power serving customers during power outages. Here we seek to develop a PDE-based scheme for optimally dispatching an autonomous fleet to simultaneously serve passengers and loads experiencing an outage as an alternative source of revenue. We will rely upon real datasets of historic taxi trips and power outages from the San Francisco Bay Area to model the flow of energy across our system in response to the dynamics of pricing and demand developed therein.
 \end{abstract}
 % IEEEtran.cls defaults to using nonbold math in the Abstract.
 % This preserves the distinction between vectors and scalars. However,
@@ -486,8 +486,11 @@ Abstract here.
 
 \section{Introduction}
 
-\subsection{Subsection Heading Here}
-
+\subsection{Motivation and Background}
+Fully autonomous PEVs have tremendous potential to change the future of mobility. In particular, fleets of autonomous vehicles providing on-demand mobility services will likely play a major role in transportation systems. While the impact of these changes on travel demand is uncertain, it is clear that safety, energy efficiency, and cost of travel will be substantially improved in the future. It?s also clear that autonomous on-demand fleets of PEVs will require continued innovation in methods for systems optimization and control.
+Autonomous PEV fleets could play an important role in providing flexibility services to the future electric grid. Another potential source of ancillary value provided by these vehicles is supplying electricity to buildings during a power outage, when occupancy willingness to pay is particularly high. Our team is interested in this topic because it combines the skills and interests of all the team members in a project that is novel, fun, and presents a formidable technical challenge.
+\subsection{Focus of this Study}
+We propose to develop a PDE-based approach to optimize the dispatch of autonomous on-demand PEVs in San Francisco given time varying, spatially distributed demands for trips and demand for electricity due to power outages. The approach will be designed to balance the competing uses for the vehicles by characterizing the price elasticity of demand for trips and electricity and then seeking the profit maximizing distribution of servicing both demands. We will also explore sizing the fleet and the battery capacity of the vehicles to higher levels of service in both markets.
 
 \section{Methodology}
 
@@ -522,7 +525,7 @@ $\sigma_{I_i \rightarrow I_j}^o(x,t)$ & \parbox[t]{\colmargin}{Flow of PEVs from
 $\sigma_{I_i \rightarrow I_j}^\prime(x,t)$ & \parbox[t]{\colmargin}{ Flow of PEVs from Idle state of node $i$ to Idle state of node $j$ with passengers} \\
 $q_C(x,t)$ & Instantaneous charging power \\
 $q_D(x,t)$ & Instantaneous discharging power \\
-$\mathbb{Z}$ & Set of TAZs \\
+$\mathbb{Z}$ & Set of Transportation Network Nodes (I-IV) \\
 $T$ & Time horizon of the optimization \\
  & \\
 \hline
@@ -557,7 +560,7 @@ q_C(x) &=& \frac{50}{E_{max}}\eta(x)\frac{1}{60} \\
 q_D(x) &=& \frac{-20}{E_{max}}\frac{1}{60}
 \end{eqnarray*}
 
-The model is now spatially disaggregated, so the three PDE's characterizing the distribution of vehicles in charging, discharging, and idle states are indexed by $i$ for each node in the system. 
+The model is now spatially disaggregated, so the three PDE's characterizing the distribution of vehicles in charging, discharging, and idle states are indexed by $i$ for each node in the system. We have selected a very simplified 4 node, equal-area network design to represent the road network of San Francisco, CA. %%%%%%Add map plot here
 
 Secondly, new flow terms are specified which capture the transport of vehicles, with and without passengers ($\sigma^\prime$ and $\sigma^o$ respectively), from the Idle state of one node to any other (e.g. $\sigma_{I_i \rightarrow I_j}^\prime$). For a given node $i$ and any other node $j$, the flows due to transport relevant to the Idle curve at $i$ require four flow terms: two terms representing departures from node $i$ with and without passengers and two separate terms representing arrivals to node $i$. 
 
@@ -607,6 +610,44 @@ Trips are conserved between OD pairs but shifted in time and SOE.
      \sigma_{I_i \rightarrow I_j}^o(x,t) & = & \sigma_{I_j \leftarrow I_i}^o(x - \Delta x_{i,j},t + \Delta t_{i,j}), ~~~ \{(i,j) \in \mathbb{Z} \times \mathbb{Z}\}
 \end{eqnarray*}
 
+The values of $\Delta x$ and $\Delta t$ for each node (I-IV) were derived empirically based on real San Francisco taxi fare data collected over the course of a month in June 2012. We averaged trip durations and trip distances for trips from each node $i$ to each node $j$,  scaling the average distance by 5.05 kWh/km to derive $\Delta x_{i,j}$ and taking the average time as $\Delta t_{i,j}$. The derived values are shown in Table II.
+
+\begin{table}[!ht]
+    % increase table row spacing, adjust to taste
+    \renewcommand{\arraystretch}{1}
+    % if using array.sty, it might be a good idea to tweak the value of
+    % \extrarowheight as needed to properly center the text within the cells
+    \caption{Flow Constraints}
+    \label{tab:flow constraints}
+    \centering
+    \def\colmargin{6.75cm}
+    % Some packages, such as MDW tools, offer better commands for making tables
+    % than the plain LaTeX2e tabular which is used here.
+    \begin{tabular}{lll}
+    \hline
+    \textbf{Node Flows ($i$ $\rightarrow$ $j$)} & \textbf{Derived} $\Delta x$ (kWh) & \textbf{Derived} $\Delta t$ (s) \\
+    \hline
+    $1\rightarrow1$ & 0.42  & 476.25  \\
+    $1\rightarrow2$ & 0.82  & 791.92  \\
+    $1\rightarrow3$ & 0.83  & 772.85  \\
+    $1\rightarrow4$ & 0.93  & 1004.16  \\
+    $2\rightarrow1$ & 0.84  & 759.65  \\
+    $2\rightarrow2$ & 0.38  & 489.06  \\
+    $2\rightarrow3$ & 1.26  & 992.06  \\
+    $2\rightarrow4$ & 0.77  & 697.79  \\
+    $3\rightarrow1$ & 0.82  & 773.16  \\
+    $3\rightarrow2$ & 1.33  & 1128.86  \\
+    $3\rightarrow3$ & 0.46  & 642.71  \\
+    $3\rightarrow4$ & 0.86  & 813.06  \\
+    $4\rightarrow1$ & 0.93  & 956.37  \\
+    $4\rightarrow2$ & 0.77  & 724.55  \\
+    $4\rightarrow3$ & 0.81  & 663.75  \\
+    $4\rightarrow4$ & 0.37  & 402.56  \\
+    \hline
+    \end{tabular}
+\end{table}
+
+
 Supply cannot exceed demand for discharging or mobility. Demand is exogenously defined.
 
 \begin{eqnarray*}
@@ -620,6 +661,8 @@ Vehicles must have sufficient state of charge to make trips:
     \sigma_{I_i \rightarrow I_j}^\prime(x,t) & = & 0, ~~~ x < \Delta x_{i,j} \\
     \sigma_{I_i \rightarrow I_j}^o(x,t) & = & 0, ~~~ x < \Delta x_{i,j}
 \end{eqnarray*}
+
+
 
 \subsection{Discretization}
 
