@@ -494,6 +494,8 @@ We propose to develop a PDE-based approach to optimize the dispatch of autonomou
 
 \section{Methodology}
 
+\subsection{Power Outage Modeling}
+
 \subsection{Modeling Aggregations of Electric AMoD Vehicles}
 \begin{table}[!ht]
 % increase table row spacing, adjust to taste
@@ -578,6 +580,27 @@ The charging rate defined by $P(x)$ is illustrated in Figure \ref{fig:dcFastRate
 %\caption{The function $P(x)$, or the charge rate of a DC Fast charger.}
 %\label{fig:dcFastRate}
 %\end{figure}
+
+\subsection{Estimating Demand for Backup Power}
+A key component of this analysis is to simulate the demand (and willingness to pay) for backup power due to power outages in each node. This work involves three key analysis components: (1) representing outages in each node, (2) quantifying the magnitude of unserved load, (3) estimating price for supplying backup power. The present work focuses on task 1, making simplified assumptions based on the literature for tasks 2 and 3. 
+
+To represent outages, we draw on historical outage data for Pacific Gas and Electric. The data are collected using an automated web scraper that collects information about ongoing power outages every 8 minutes. The information include the locations of all ongoing outages and the number of customers affected at each location. We aggregate outages reported in each node to estimate the number of customers affected in each node at a given time.
+
+In the present analysis, we examine two separate days of outage data, including both ``typical'' and ``extreme'' outage scenarios. We use outage data for September 29, 2014 to represent a typical day and December 31, 2014 to represent an extreme day. Figures \ref{fig:typical_day} and \ref{fig:extreme_day} show the number of customers without power in each node and across all nodes at each time step.
+
+Currently, we assume electricity demand is constant at all time steps for all customers in a node. Demand in each node will consider the likely breakdown among residential, commercial and industrial customers, applying different rules of thumb regarding power demand for each customer type. Future iterations of the model can include time-varying demand profiles that better represent the magnitude of unserved loads. We assign a fixed cost per kWh discharge to the grid. Future work will examine a dynamic price per kWh affected by (1) the magnitude of unserved loads, and (2) outage duration.
+
+\begin{figure}
+  \label{fig:typical_day}
+  \caption{Number of customers without power overall (top) and in each node on September 29, 2014. The represented outage data will serve as our typical outage scenario.}
+  \includegraphics[width=\linewidth]{plots/typical_day_2014929.png}
+\end{figure}
+
+\begin{figure}
+  \label{fig:extreme_day}
+  \caption{Number of customers without power overall (top) and in each node on December 31, 2014. The represented outage data will serve as our extreme outage scenario.}
+  \includegraphics[width=\linewidth]{plots/extreme_day_20141231.png}
+\end{figure}
 
 \subsection{Optimization Formulation}
 
