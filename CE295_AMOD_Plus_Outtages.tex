@@ -489,6 +489,9 @@ The era of fully autonomous, electrified taxi fleets is rapidly approaching, and
 \subsection{Motivation and Background}
 Fully autonomous PEVs have tremendous potential to change the future of mobility. In particular, fleets of autonomous vehicles providing on-demand mobility services will likely play a major role in transportation systems. While the impact of these changes on travel demand is uncertain, it is clear that safety, energy efficiency, and cost of travel will be substantially improved in the future. It?s also clear that autonomous on-demand fleets of PEVs will require continued innovation in methods for systems optimization and control.
 Autonomous PEV fleets could play an important role in providing flexibility services to the future electric grid. Another potential source of ancillary value provided by these vehicles is supplying electricity to buildings during a power outage, when occupancy willingness to pay is particularly high. Our team is interested in this topic because it combines the skills and interests of all the team members in a project that is novel, fun, and presents a formidable technical challenge.
+
+\subsection{Relevant Literature}
+
 \subsection{Focus of this Study}
 We propose to develop a PDE-based approach to optimize the dispatch of autonomous on-demand PEVs in San Francisco given time varying, spatially distributed demands for trips and demand for electricity due to power outages. The approach will be designed to balance the competing uses for the vehicles by characterizing the price elasticity of demand for trips and electricity and then seeking the profit maximizing distribution of servicing both demands. We will also explore sizing the fleet and the battery capacity of the vehicles to higher levels of service in both markets.
 
@@ -698,6 +701,10 @@ Vehicles must have sufficient state of charge to make trips:
     w_{i,k}^{n+1} &=& w_{i,k}^{n} - \frac{q_D \Delta t}{2 \Delta x}\left(w_{i,k+1}^{n} - w_{i,k-1}^{n} \right) + \\
     && \frac{(q_D \Delta t)^2}{2 (\Delta x)^2}\left(w_{i,k+1}^{n} - 2w_{i,k}^{n} + w_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow D_i,k}^n \\   
 \end{eqnarray*}
+
+\section{Discussion}
+
+\section{Summary}
 
 % needed in second column of first page if using \IEEEpubid
 %\IEEEpubidadjcol
