@@ -456,7 +456,7 @@
 
 \begin{abstract}
 %\boldmath
-The era of fully autonomous, electrified taxi fleets is rapidly approaching, and with it the opportunity to innovate myriad on-demand services that extend beyond the realm of human mobility. This project envisions a future where autonomous EV fleets can be dispatched as both as a taxi service and a source of on-demand power serving customers during power outages. Here we seek to develop a PDE-based scheme for optimally dispatching an autonomous fleet to simultaneously serve passengers and loads experiencing an outage as an alternative source of revenue. We will rely upon real datasets of historic taxi trips and power outages from the San Francisco Bay Area to model the flow of energy across our system in response to the dynamics of pricing and demand developed therein.
+The era of fully autonomous, electrified taxi fleets is rapidly approaching, and with it the opportunity to innovate myriad on-demand services that extend beyond the realm of human mobility. This project envisions a future where autonomous EV fleets can be dispatched as both as a taxi service and a source of on-demand power serving customers during power outages. We develop a PDE-based scheme to manage the optimal dispatch of an autonomous fleet to serve passengers and electric load during an outage as an augmented stream of revenue. We use real world data from San Francisco for our case study.
 \end{abstract}
 % IEEEtran.cls defaults to using nonbold math in the Abstract.
 % This preserves the distinction between vectors and scalars. However,
@@ -482,25 +482,23 @@ The era of fully autonomous, electrified taxi fleets is rapidly approaching, and
 % creates the second title. It will be ignored for other modes.
 \IEEEpeerreviewmaketitle
 
-
-
 \section{Introduction}
 
 \subsection{Motivation and Background}
-Fully autonomous PEVs have tremendous potential to change the future of mobility. In particular, fleets of autonomous vehicles providing on-demand mobility services will likely play a major role in transportation systems. While the impact of these changes on travel demand is uncertain, it is clear that safety, energy efficiency, and cost of travel will be substantially improved in the future. It?s also clear that autonomous on-demand fleets of PEVs will require continued innovation in methods for systems optimization and control.
-Autonomous PEV fleets could play an important role in providing flexibility services to the future electric grid. Another potential source of ancillary value provided by these vehicles is supplying electricity to buildings during a power outage, when occupancy willingness to pay is particularly high. Our team is interested in this topic because it combines the skills and interests of all the team members in a project that is novel, fun, and presents a formidable technical challenge.
+Fully autonomous PEVs have tremendous potential to change the future of mobility. In particular, fleets of autonomous vehicles providing on-demand mobility services will likely play a major role in transportation systems. While the impact of these changes on travel demand is uncertain, it is clear that safety, energy efficiency, and cost of travel will be substantially improved in the future. It's also clear that autonomous on-demand fleets of PEVs will require continued innovation in methods for systems optimization and control.
+
+Autonomous PEV fleets could play an important role in providing flexibility services to the future electric grid. Another potential source of ancillary value provided by these vehicles is supplying electricity to buildings during a power outage, when occupancy willingness to pay is particularly high. 
 
 \subsection{Relevant Literature}
 
 \subsection{Focus of this Study}
-We propose to develop a PDE-based approach to optimize the dispatch of autonomous on-demand PEVs in San Francisco given time varying, spatially distributed demands for trips and demand for electricity due to power outages. The approach will be designed to balance the competing uses for the vehicles by characterizing the price elasticity of demand for trips and electricity and then seeking the profit maximizing distribution of servicing both demands. We will also explore sizing the fleet and the battery capacity of the vehicles to higher levels of service in both markets.
 
-\section{Methodology}
+We propose a PDE-based approach to optimize the dispatch of autonomous on-demand PEVs given time varying, spatially distributed demands for trips and demand for electricity due to power outages. The approach will be designed to balance the competing uses for the vehicles by seeking the profit maximizing distribution of simultaneously servicing both demands. We explore a case study based on taxi trip and power outage data from San Francisco. We also assess the impact of fleet size and battery capacity on the levels of service in both markets. 
 
-\subsection{Power Outage Modeling}
+\section{Technical Description}
 
-\subsection{Modeling Aggregations of Electric AMoD Vehicles}
-\begin{table}[!ht]
+\subsection{Modeling Aggregations of Autonomous Electric Vehicles}
+\begin{table}[!htbp]
 % increase table row spacing, adjust to taste
 \renewcommand{\arraystretch}{1.3}
 % if using array.sty, it might be a good idea to tweak the value of
@@ -537,7 +535,7 @@ $T$ & Time horizon of the optimization \\
 \end{tabular}
 \end{table}
 
-We adopt and extend the scheme developed by [1] for tracking an aggregation of electric vehicles. See Table \ref{tab:symbols} for nomenclature. The system is characterized by the following equations, and their extensions beyond [1] are explained below. 
+We adopt and extend the scheme developed by \cite{lefloch_pde_2016} for tracking and controlling an aggregation of electric vehicles. The core advantage of the scheme is the recognition that in an autonomous PEV fleet, only the location of vehicles and their state of charge are critical to know at any point in time. Instead of representing individual vehicles explicitly and developing a combinatorial approach to control, we aggregate all vehicles in a node and represent that aggregation as a distribution of vehicles by their state of energy (SOE). Vehicles in node $i$ can be in one of three states: charging, idle, or discharging, which we represent by the state variables $u_i(x,t)$,$v_i(x,t)$, and $w_i(x,t)$, respectively. The system is then characterized by the following coupled partial differential equations (see Table \ref{tab:symbols} for further nomenclature): 
 
 \begin{eqnarray*}
     \frac{\partial u_i}{\partial t}(x,t) &=& -\frac{\partial}{\partial x}\left[ q_C(x) u_i(x,t) \right] + \sigma_{I_i \rightarrow C_i}(x,t) \\
@@ -549,96 +547,64 @@ We adopt and extend the scheme developed by [1] for tracking an aggregation of e
 
 Where: 
 
-%\begin{eqnarray*}
-%q_C(x) &=& \frac{P(x)}{E_{max}}\eta(x)\frac{1}{60} \\
-%P(x) &=& \begin{cases} 
-      %50 & x/E_{max} < 0.8 \\
-      %-860(x/E_{max}) + 738 & 0.8 \leq x/E_{max} < 0.85 \\
-      %-55(x/E_{max}) + 53.75 & 0.85 \leq x/E_{max} < 0.95 \\
-      %1.5 & 0.95 \leq x/E_{max}
-   %\end{cases}  \\
-  %\eta(x) &=& ??? \\
-  %q_D(x) &=& \frac{-20}{E_{max}}\frac{1}{60}
-%\end{eqnarray*}
 \begin{eqnarray*}
 q_C(x) &=& \frac{50}{E_{max}}\eta(x)\frac{1}{60} \\
 q_D(x) &=& \frac{-20}{E_{max}}\frac{1}{60}
 \end{eqnarray*}
 
-The model is now spatially disaggregated, so the three PDE's characterizing the distribution of vehicles in charging, discharging, and idle states are indexed by $i$ for each node in the system. We have selected a very simplified 4 node, equal-area network design to represent the road network of San Francisco, CA. %%%%%%Add map plot here
+The equations make use of an advection term (when the time derivative is linearly related to the spatial derivative) to represent how vehiclees in the charging or discharging state change their SOE over time and move toward an SOE of 1 or 0, respectively. The model is spatially disaggregated, so the three PDEs are repeated for every node in the system and indexed by $i$.
 
-Secondly, new flow terms are specified which capture the transport of vehicles, with and without passengers ($\sigma^\prime$ and $\sigma^o$ respectively), from the Idle state of one node to any other (e.g. $\sigma_{I_i \rightarrow I_j}^\prime$). For a given node $i$ and any other node $j$, the flows due to transport relevant to the Idle curve at $i$ require four flow terms: two terms representing departures from node $i$ with and without passengers and two separate terms representing arrivals to node $i$. 
+Flow terms $\sigma_{I_i \rightarrow C_i}(x,t)$ and $\sigma_{I_i \rightarrow D_i}(x,t)$ capture the transport of vehicles between the three distributions within each node. In addition, there are flow terms to capture transport between the Idle curves of distinct nodes. For a given node $i$ and any other node $j$, four separate terms are used to represent trips with and without passengers ($\sigma^\prime$ and $\sigma^o$ respectively) and departing trips versus arriving trips ($\sigma_{I_i \rightarrow I_j}$ and $\sigma_{I_j \leftarrow I_i}$ respectively).
 
-The flows must be constrained through the optimization scheme such that departures from a node $i$ to node $j$ are equivalent to the arrivals of vehicles from $i$ to $j$ at a future time and SOE corresponding to the travel time and energy requirements of that trip. Finally, the distinction between trips with and without passengers becomes critical in the context of an economic optimization that places monetary value on transporting people over moving empty vehicles.
-
-%The charging rate defined by $P(x)$ is illustrated in Figure \ref{fig:dcFastRate}. The function is assumed to be piecewise linear and it rapidly transforms after an SOC of 80\% from a fast charge to a Level 2 charge (7kW) and then declines again to a trickle charge at an SOC of 95\%.
-The charging rate defined by $P(x)$ is illustrated in Figure \ref{fig:dcFastRate}. The function is assumed to be piecewise linear and it rapidly transforms after an SOC of 80\% from a fast charge to a Level 2 charge (7kW) and then declines again to a trickle charge at an SOC of 95\%.
-
-% plot(seq(0,1,by=.01),c(rep(50,80),-860*seq(.8,.84,by=.01)+738,-55*seq(.85,.94,by=.01)+53.75,rep(1.5,6)),type='l',xlab="SOC",ylab="Power (kW)",main="DC Fast Charging Rate")
-% grid()
-% points(seq(0,1,by=.01),c(rep(50,80),-860*seq(.8,.84,by=.01)+738,-55*seq(.85,.94,by=.01)+53.75,rep(1.5,6)),type='l')
-%\begin{figure}[!htbp]
-%\centering
-%\includegraphics[width=3.0in]{dcFastRate} 
-%\caption{The function $P(x)$, or the charge rate of a DC Fast charger.}
-%\label{fig:dcFastRate}
-%\end{figure}
-
-\subsection{Estimating Demand for Backup Power}
-A key component of this analysis is to simulate the demand (and willingness to pay) for backup power due to power outages in each node. This work involves three key analysis components: (1) representing outages in each node, (2) quantifying the magnitude of unserved load, (3) estimating price for supplying backup power. The present work focuses on task 1, making simplified assumptions based on the literature for tasks 2 and 3. 
-
-To represent outages, we draw on historical outage data for Pacific Gas and Electric. The data are collected using an automated web scraper that collects information about ongoing power outages every 8 minutes. The information include the locations of all ongoing outages and the number of customers affected at each location. We aggregate outages reported in each node to estimate the number of customers affected in each node at a given time.
-
-In the present analysis, we examine two separate days of outage data, including both ``typical'' and ``extreme'' outage scenarios. We use outage data for September 29, 2014 to represent a typical day and December 31, 2014 to represent an extreme day. Figures \ref{fig:typical_day} and \ref{fig:extreme_day} show the number of customers without power in each node and across all nodes at each time step.
-
-Currently, we assume electricity demand is constant at all time steps for all customers in a node. Demand in each node will consider the likely breakdown among residential, commercial and industrial customers, applying different rules of thumb regarding power demand for each customer type. Future iterations of the model can include time-varying demand profiles that better represent the magnitude of unserved loads. We assign a fixed cost per kWh discharge to the grid. Future work will examine a dynamic price per kWh affected by (1) the magnitude of unserved loads, and (2) outage duration.
-
-\begin{figure}
-  \label{fig:typical_day}
-  \caption{Number of customers without power overall (top) and in each node on September 29, 2014. The represented outage data will serve as our typical outage scenario.}
-  \includegraphics[width=\linewidth]{plots/typical_day_2014929.png}
-\end{figure}
-
-\begin{figure}
-  \label{fig:extreme_day}
-  \caption{Number of customers without power overall (top) and in each node on December 31, 2014. The represented outage data will serve as our extreme outage scenario.}
-  \includegraphics[width=\linewidth]{plots/extreme_day_20141231.png}
-\end{figure}
+The inter-nodal flow terms are then constrained through the optimization scheme such that departures from a node $i$ to node $j$ are equivalent to the arrivals of vehicles from $i$ to $j$ at a future time and SOE corresponding to the travel time and energy requirements of that trip. The distinction between trips with and without passengers becomes critical in the context of the economic optimization that places monetary value on transporting people over moving empty vehicles.
 
 \subsection{Optimization Formulation}
 
 \subsubsection{Objective}
-~ \\
-
-For CE296 Project:
-
+The objective of the optimization is to maximize the operational profit of dispatching the autonomous on-demand PEVs:
 \begin{eqnarray*}
+  \max_{\substack{\sigma_{I_i \rightarrow C_i} \\
+    \sigma_{I_i \rightarrow D_i} \\ 
+    \sigma_{I_i \rightarrow I_j}}}
     K &=& \sum_{i\in\mathbb{Z}} \int_{t=0}^{T} \left[ \rho_{dis} Q_{dis,i}(t) + \right. \\ 
-    && \left. \rho_{mob}\sum_{j\in\mathbb{Z}}Q_{mob,i,j}(t)  - CQ_{ch,i}(t) \right]\\
+      && \left. \sum_{j\in\mathbb{Z}}\rho_{mob}(i,j)Q_{mob,i,j}(t)  - CQ_{ch,i}(t) \right]\\
     Q_{dis,i}(t) & = & \int_{0}^{1} w_i(x,t) dx \\
     Q_{ch,i}(t) & = & \int_{0}^{1} u_i(x,t) dx \\
     Q_{mob,i,j}(t) & = & \int_{0}^{1}\left( \sigma_{I_i \rightarrow I_j}^\prime(x,t) \right)dx
 \end{eqnarray*}
-
-Later:
-
-\begin{eqnarray*}
-    K &=& \sum_{i\in\mathbb{Z}} \int_{t=0}^{T} \left[ \rho_{disch}(Q_{dis,i}(t)) Q_{dis,i}(t) + \right. \\ && \left. \rho_{mob}\left(\sum_{j\in\mathbb{Z}}Q_{mob,i}(t)\right)\sum_{j\in\mathbb{Z}}Q_{mob,i,j}(t) - CQ_{ch,i}(t) \right]\\
-\end{eqnarray*}
+Where $\rho_{mob}(i,j)$, $\rho_{dis}$, and $C$ are the fares charged to passengers, the price charged to serve load during outages, and the cost to purchase electricty from the grid, respecitvely.
 
 \subsubsection{Constraints}
-~ \\
 
-Trips are conserved between OD pairs but shifted in time and SOE.
+The equations of state are discretized using the Lax-Wendroff method for numerically solving hyperbolic PDEs. They appear in the formulation as a set of equality constraints. In addition to the equations of state there are other constraints on the flows which we use to enforce realistic transport between nodes and the overall conservation of vehicles in the system. 
+
+Firstly, we constrain the size of the flows between states $u$, $v$, and $w$ to be no greater than the number of vehicles in those states:
+
+\begin{eqnarray*}
+    -\sigma_{I_i \rightarrow C_i}(x,t) & <= & u_i(x,t) \\
+    \sigma_{I_i \rightarrow C_i}(x,t) + \sigma_{I_i \rightarrow D_i}(x,t) & <= & v_i(x,t) \\
+    -\sigma_{I_i \rightarrow D_i}(x,t) & <= & w_i(x,t) 
+\end{eqnarray*}
+~\\ 
+We also require that as charging vehicles reach an SOE of 1 or as discharging vehicles reach an SOE of 0, they immediately flow to the Idle state.
+
+\begin{eqnarray*}
+    -\sigma_{I_i \rightarrow C_i}(1,t) & = & u_i(1,t) \\
+    -\sigma_{I_i \rightarrow D_i}(0,t) & = & w_i(0,t) 
+\end{eqnarray*}
+
+~\\ 
+Next, we require that trips be conserved between OD pairs but shifted in time and SOE.
 
 \begin{eqnarray*}
     \sigma_{I_i \rightarrow I_j}^\prime(x,t) & = & \sigma_{I_j \leftarrow I_i}^\prime(x - \Delta x_{i,j},t + \Delta t_{i,j}), ~~~ \{(i,j) \in \mathbb{Z} \times \mathbb{Z}\} \\
      \sigma_{I_i \rightarrow I_j}^o(x,t) & = & \sigma_{I_j \leftarrow I_i}^o(x - \Delta x_{i,j},t + \Delta t_{i,j}), ~~~ \{(i,j) \in \mathbb{Z} \times \mathbb{Z}\}
 \end{eqnarray*}
 
-The values of $\Delta x$ and $\Delta t$ for each node (I-IV) were derived empirically based on real San Francisco taxi fare data collected over the course of a month in June 2012. We averaged trip durations and trip distances for trips from each node $i$ to each node $j$,  scaling the average distance by 5.05 kWh/km to derive $\Delta x_{i,j}$ and taking the average time as $\Delta t_{i,j}$. The derived values are shown in Table II.
+~\\ 
+The values of $\Delta x$ and $\Delta t$ for each node (I-IV) are derived empirically based on real San Francisco taxi fare data collected over the course of a month in June 2012. We averaged trip durations and trip distances for trips from each node $i$ to each node $j$,  scaling the average distance by 5.05 km/kWh to derive $\Delta x_{i,j}$ and taking the average time as $\Delta t_{i,j}$. The derived values are shown in Table II.
 
-\begin{table}[!ht]
+\begin{table}[!htbp]
     % increase table row spacing, adjust to taste
     \renewcommand{\arraystretch}{1}
     % if using array.sty, it might be a good idea to tweak the value of
@@ -673,38 +639,108 @@ The values of $\Delta x$ and $\Delta t$ for each node (I-IV) were derived empiri
     \end{tabular}
 \end{table}
 
-
-Supply cannot exceed demand for discharging or mobility. Demand is exogenously defined.
+The number of vehicles that are in the discharging state or that are making trips with passengers cannot exceed demand for discharging or mobility.
 
 \begin{eqnarray*}
    Q_{dis,i}(t) & \le & D_{dis,i}(t) \\
    Q_{mob,i,j}(t) & \le & D_{mob,i,j}(t) \\
 \end{eqnarray*}
 
-Vehicles must have sufficient state of charge to make trips:
+The demands $D_{dis,i}$ and $D_{mob,i,j}$ are exogenously defined and described below. It's useful to note the choice of inequality constraints when constraining $Q_{dis,i}$ and $Q_{mob,i,j}$. This choice serves three purposes: 1) it allows the solution of the optimization to prioritize between the two types of serving demand; 2) it enables simulations where the fleet of vehicles is not sized to meet the peak demand in the system; and 3) it allows the system to be used in an application where power outages occur spontanteously and without foresight (a feature we will explore in future work). 
+
+Finally, we require that the vehicles have sufficient state of energy to make trips:
 
 \begin{eqnarray*}
     \sigma_{I_i \rightarrow I_j}^\prime(x,t) & = & 0, ~~~ x < \Delta x_{i,j} \\
     \sigma_{I_i \rightarrow I_j}^o(x,t) & = & 0, ~~~ x < \Delta x_{i,j}
 \end{eqnarray*}
 
+\subsection{Application}
 
+\subsubsection{Spatial Discretization}
+We have divided the City of San Francisco, CA into a highly simplified 4-zone, equal-area network (Figure \ref{fig:sf}). As described above, we analyzed taxi data to characterize the constraints realted to mobility and the prices used in the objective. Below we describe how power outages are characterized from real world data.
 
-\subsection{Discretization}
+\begin{figure}[!htbp]
+  \includegraphics[width=\linewidth]{plots/grid1-cropped.png}
+  \caption{We divide San Francisco into 4 equal-area nodes. Taxi trips from a typical weekday are plotted as red dots.}
+  \label{fig:sf}
+\end{figure}
 
-\begin{eqnarray*}
-    u_{i,k}^{n+1} &=& u_{i,k}^{n} - \frac{q_C \Delta t}{2 \Delta x}\left(u_{i,k+1}^{n} - u_{i,k-1}^{n} \right) + \\
-    && \frac{(q_C \Delta t)^2}{2 (\Delta x)^2}\left(u_{i,k+1}^{n} - 2u_{i,k}^{n} + u_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow C_i,k}^n \\
-    v_{i,k}^{n+1} &=& v_{i,k}^{n} + \Delta t \sum_{j\in\mathbb{Z}} \left[ \sigma_{I_i \leftarrow I_j,k}^{\prime,n} + \sigma_{I_i \leftarrow I_j,k}^{o,n} \right. \\
-    & & ~~~ \left. - \sigma_{I_i \rightarrow I_j,k}^{\prime,n} - \sigma_{I_i \rightarrow I_j,k}^{o,n} \right] \\
-    && ~~~ - \Delta t \left( \sigma_{I_i \rightarrow C_i,k}^n + \sigma_{I_i \rightarrow D_i,k}^n \right) \\
-    w_{i,k}^{n+1} &=& w_{i,k}^{n} - \frac{q_D \Delta t}{2 \Delta x}\left(w_{i,k+1}^{n} - w_{i,k-1}^{n} \right) + \\
-    && \frac{(q_D \Delta t)^2}{2 (\Delta x)^2}\left(w_{i,k+1}^{n} - 2w_{i,k}^{n} + w_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow D_i,k}^n \\   
-\end{eqnarray*}
+\subsubsection{Demand for Mobility}
+
+\subsubsection{Demand for Backup Power}
+A key component of this analysis is to simulate the demand (and willingness to pay) for backup power due to power outages in each node. This work involves three key components: (1) representing outages in each node, (2) quantifying the magnitude of unserved load, (3) estimating price for supplying backup power. The present work focuses on task 1, making simplified assumptions based on the literature for tasks 2 and 3. 
+
+To represent outages, we draw on historical outage data from Pacific Gas \& Electric Co. The data are collected using an automated web scraper that collects information about ongoing power outages every 8 minutes. The information include the locations of all ongoing outages and the number of customers affected at each location. We aggregate outages reported in each node to estimate the number of customers affected in each node at a given time.
+
+In the present analysis, we examine two separate days of outage data, including both ``typical'' and ``extreme'' outage scenarios. We use outage data for September 29, 2014 to represent a typical day and December 31, 2014 to represent an extreme day. Figures \ref{fig:typical_day} and \ref{fig:extreme_day} show the number of customers without power in each node and across all nodes at each time step.
+
+Currently, we assume electricity demand is constant at all time steps for all customers in a node. Demand in each node will consider the likely breakdown among residential, commercial and industrial customers, applying different rules of thumb regarding power demand for each customer type. Future iterations of the model can include time-varying demand profiles that better represent the magnitude of unserved loads. We assign a fixed cost per kWh discharge to the grid. Future work will examine a dynamic price per kWh affected by (1) the magnitude of unserved loads, and (2) outage duration.
+
+\begin{figure}[!htbp]
+  \includegraphics[width=\linewidth]{plots/typical_day_2014929.png}
+  \caption{Number of customers without power overall (top) and in each node on September 29, 2014. The represented outage data will serve as our typical outage scenario.}
+  \label{fig:typical_day}
+\end{figure}
+
+\begin{figure}[!htbp]
+  \includegraphics[width=\linewidth]{plots/extreme_day_20141231.png}
+  \caption{Number of customers without power overall (top) and in each node on December 31, 2014. The represented outage data will serve as our extreme outage scenario.}
+  \label{fig:extreme_day}
+\end{figure}
+
 
 \section{Discussion}
 
 \section{Summary}
+
+
+%%%% EXTRA STUFF WE MIGHT WANT LATER
+
+%Later:
+
+%\subsection{Discretization}
+
+%\begin{eqnarray*}
+    %u_{i,k}^{n+1} &=& u_{i,k}^{n} - \frac{q_C \Delta t}{2 \Delta x}\left(u_{i,k+1}^{n} - u_{i,k-1}^{n} \right) + \\
+    %&& \frac{(q_C \Delta t)^2}{2 (\Delta x)^2}\left(u_{i,k+1}^{n} - 2u_{i,k}^{n} + u_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow C_i,k}^n \\
+    %v_{i,k}^{n+1} &=& v_{i,k}^{n} + \Delta t \sum_{j\in\mathbb{Z}} \left[ \sigma_{I_i \leftarrow I_j,k}^{\prime,n} + \sigma_{I_i \leftarrow I_j,k}^{o,n} \right. \\
+    %& & ~~~ \left. - \sigma_{I_i \rightarrow I_j,k}^{\prime,n} - \sigma_{I_i \rightarrow I_j,k}^{o,n} \right] \\
+    %&& ~~~ - \Delta t \left( \sigma_{I_i \rightarrow C_i,k}^n + \sigma_{I_i \rightarrow D_i,k}^n \right) \\
+    %w_{i,k}^{n+1} &=& w_{i,k}^{n} - \frac{q_D \Delta t}{2 \Delta x}\left(w_{i,k+1}^{n} - w_{i,k-1}^{n} \right) + \\
+    %&& \frac{(q_D \Delta t)^2}{2 (\Delta x)^2}\left(w_{i,k+1}^{n} - 2w_{i,k}^{n} + w_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow D_i,k}^n \\   
+%\end{eqnarray*}
+
+%\begin{eqnarray*}
+    %K &=& \sum_{i\in\mathbb{Z}} \int_{t=0}^{T} \left[ \rho_{disch}(Q_{dis,i}(t)) Q_{dis,i}(t) + \right. \\ && \left. \rho_{mob}\left(\sum_{j\in\mathbb{Z}}Q_{mob,i}(t)\right)\sum_{j\in\mathbb{Z}}Q_{mob,i,j}(t) - CQ_{ch,i}(t) \right]\\
+%\end{eqnarray*}
+
+
+%\begin{eqnarray*}
+%q_C(x) &=& \frac{P(x)}{E_{max}}\eta(x)\frac{1}{60} \\
+%P(x) &=& \begin{cases} 
+      %50 & x/E_{max} < 0.8 \\
+      %-860(x/E_{max}) + 738 & 0.8 \leq x/E_{max} < 0.85 \\
+      %-55(x/E_{max}) + 53.75 & 0.85 \leq x/E_{max} < 0.95 \\
+      %1.5 & 0.95 \leq x/E_{max}
+   %\end{cases}  \\
+  %\eta(x) &=& ??? \\
+  %q_D(x) &=& \frac{-20}{E_{max}}\frac{1}{60}
+%\end{eqnarray*}
+
+
+%The charging rate defined by $P(x)$ is illustrated in Figure \ref{fig:dcFastRate}. The function is assumed to be piecewise linear and it rapidly transforms after an SOC of 80\% from a fast charge to a Level 2 charge (7kW) and then declines again to a trickle charge at an SOC of 95\%.
+% plot(seq(0,1,by=.01),c(rep(50,80),-860*seq(.8,.84,by=.01)+738,-55*seq(.85,.94,by=.01)+53.75,rep(1.5,6)),type='l',xlab="SOC",ylab="Power (kW)",main="DC Fast Charging Rate")
+% grid()
+% points(seq(0,1,by=.01),c(rep(50,80),-860*seq(.8,.84,by=.01)+738,-55*seq(.85,.94,by=.01)+53.75,rep(1.5,6)),type='l')
+%\begin{figure}[!htbp]
+%\centering
+%\includegraphics[width=3.0in]{dcFastRate} 
+%\caption{The function $P(x)$, or the charge rate of a DC Fast charger.}
+%\label{fig:dcFastRate}
+%\end{figure}
+
+
 
 % needed in second column of first page if using \IEEEpubid
 %\IEEEpubidadjcol
@@ -848,20 +884,20 @@ Vehicles must have sufficient state of charge to make trips:
 % http://www.ctan.org/tex-archive/biblio/bibtex/contrib/doc/
 % The IEEEtran BibTeX style support page is at:
 % http://www.michaelshell.org/tex/ieeetran/bibtex/
-%\bibliographystyle{IEEEtran}
+\bibliographystyle{IEEEtran}
 % argument is your BibTeX string definitions and bibliography database(s)
-%\bibliography{IEEEabrv,../bib/paper}
+\bibliography{refs} 
 %
 % <OR> manually copy in the resultant .bbl file
 % set second argument of \begin to the number of references
 % (used to reserve space for the reference number labels box)
-% \begin{thebibliography}{1}
+%\begin{thebibliography}{1}
 
 % \bibitem{IEEEhowto:kopka}
 % H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
 %   0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
 
-% \end{thebibliography}
+%\end{thebibliography}
 
 % biography section
 % 
