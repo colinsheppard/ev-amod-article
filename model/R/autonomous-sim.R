@@ -8,8 +8,8 @@ animate.soln <- function(sys){
     image.i <- 1
     for(the.t in u(sys$t)){
       png(filename = pp(ev.amod.shared,'model/results/soln-node',node,'-img',sprintf('%05d',image.i),".png"),width=800,height=500)
-      #p<-ggplot(sys[t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(var~.,scales='free_y')+labs(title=pp('t=',the.t))
-      p<-ggplot(sys[t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(var~.)+labs(title=pp('t=',the.t))+scale_y_continuous(limits=range(sys$val))
+      p<-ggplot(sys[t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(var~.,scales='free_y')+labs(title=pp('t=',the.t))
+      #p<-ggplot(sys[t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(var~.)+labs(title=pp('t=',the.t))+scale_y_continuous(limits=range(sys$val))
       print(p)
       dev.off()
       image.i <- image.i + 1
@@ -91,15 +91,15 @@ ev.amod.sim <- function(params){
   for(ix in 1:length(xs)){
     for(inode in 1:length(nodes)){
       constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t0')] <- 1
-      rhs[i.constr] <- params$FleetSize/n.nodes/length(xs)/3
+      rhs[i.constr] <- params$FleetSize/n.nodes/params$dx/length(xs)/3
       #rhs[i.constr] <- ifelse(ix==3,0,params$FleetSize/n.nodes/length(xs)/3)
       i.constr <- i.constr + 1
       constr[i.constr,pp('v-i',nodes[inode],'-x',xs[ix],'-t0')] <- 1
-      rhs[i.constr] <- params$FleetSize/n.nodes/length(xs)/3
+      rhs[i.constr] <- params$FleetSize/n.nodes/params$dx/length(xs)/3
       #rhs[i.constr] <- ifelse(ix==2,0,params$FleetSize/n.nodes/length(xs)/3)
       i.constr <- i.constr + 1
       constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t0')] <- 1
-      rhs[i.constr] <- params$FleetSize/n.nodes/length(xs)/3
+      rhs[i.constr] <- params$FleetSize/n.nodes/params$dx/length(xs)/3
       #rhs[i.constr] <- ifelse(ix==1,0,params$FleetSize/n.nodes/length(xs)/3)
       i.constr <- i.constr + 1
     }
@@ -117,7 +117,7 @@ ev.amod.sim <- function(params){
         if(ix>1)constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix-1],'-t',ts[it])] <- uLW1(xs[ix])+uLW2(xs[ix])
         constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1-2*uLW2(xs[ix])
         if(ix<length(xs))constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix+1],'-t',ts[it])] <- uLW2(xs[ix])-uLW1(xs[ix])
-        constr[i.constr,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1
+        constr[i.constr,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- params$dt
         constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it+1])] <- -1
         i.constr <- i.constr + 1
         # v: idle state
@@ -130,7 +130,7 @@ ev.amod.sim <- function(params){
         if(ix>1)constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix-1],'-t',ts[it])] <- wLW1(xs[ix])+wLW2(xs[ix])
         constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1-2*wLW2(xs[ix])
         if(ix<length(xs))constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix+1],'-t',ts[it])] <- wLW2(xs[ix])-wLW1(xs[ix])
-        constr[i.constr,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1
+        constr[i.constr,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- params$dt
         constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it+1])] <- -1
         i.constr <- i.constr + 1
       }
@@ -145,36 +145,58 @@ ev.amod.sim <- function(params){
   rhs <- c(rhs,array(0,n.constr))
   for(it in 1:length(ts)){
     for(inode in 1:length(nodes)){
-      # The flow rate from charging state to idle at full charge is equal to the total number of vehicles with full charged
-      constr[i.constr,pp('u-i',nodes[inode],'-x1-t',ts[it])] <- 1 
+      # The flow rate from charging state to idle at full charge is equal to the total number of vehicles with full charge
+      constr[i.constr,pp('u-i',nodes[inode],'-x1-t',ts[it])] <- 1/params$dt
       constr[i.constr,pp('sic-i',nodes[inode],'-x1-t',ts[it])] <- 1
       i.constr <- i.constr + 1
       # The flow rate from discharging state to idle at zero SOE is equal to the total number of vehicles with zero charged
-      constr[i.constr,pp('w-i',nodes[inode],'-x0-t',ts[it])] <- 1 # >> should this have a time step in between?
+      constr[i.constr,pp('w-i',nodes[inode],'-x0-t',ts[it])] <- 1/params$dt
       constr[i.constr,pp('sid-i',nodes[inode],'-x0-t',ts[it])] <- 1
       i.constr <- i.constr + 1
     }
   }
-  #######################
-  # Total number of vehicles
-  #######################
-  n.constr <- 1*n.nodes*n.t
-  constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('tot.num',1:n.constr),names(obj))))
-  rhs <- c(rhs,array(0,n.constr))
+  ########################
+  ## Total number of vehicles
+  ########################
+  #n.constr <- 1*n.nodes*n.t
+  #constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('tot.num',1:n.constr),names(obj))))
+  #rhs <- c(rhs,array(0,n.constr))
   
-  for(it in 1:length(ts)){
-    for(inode in 1:length(nodes)){
-      for(ix in 1:length(xs)){
-        constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1 
-        constr[i.constr,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1 
-        constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1 
-      }
-    }
-    rhs[i.constr] <- params$FleetSize
-    i.constr <- i.constr + 1
-  }
+  #for(it in 1:length(ts)){
+    #for(inode in 1:length(nodes)){
+      #for(ix in 1:length(xs)){
+        #constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1 
+        #constr[i.constr,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1 
+        #constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1 
+      #}
+    #}
+    #rhs[i.constr] <- params$FleetSize
+    #i.constr <- i.constr + 1
+  #}
+  #######################
+  # FOR DEBUGGING SET SIGMAS TO ZERO
+  #######################
+  #n.constr <- 2*n.nodes*n.t*(n.x-1)
+  ##n.constr <- 2*n.nodes*(n.x-1)*3
+  #constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('noflow',1:n.constr),names(obj))))
+  #rhs <- c(rhs,array(0,n.constr))
+  #for(it in 1:length(ts)){
+  ##for(it in 1:3){
+    #for(inode in 1:length(nodes)){
+      #for(ix in 2:length(xs)){
+        ##print(pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it]))
+        #constr[i.constr,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
+        #i.constr <- i.constr + 1
+      #}
+      #for(ix in 1:(length(xs)-1)){
+        ##print(pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it]))
+        #constr[i.constr,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
+        #i.constr <- i.constr + 1
+      #}
+    #}
+  #}
   
-  #------------------------------------ Inequality Condition from here ------------------------------------------#
+  #------------------------------------ Inequality Contraints Start here ------------------------------------------#
   
   #######################
   # Flow Limits
@@ -187,40 +209,40 @@ ev.amod.sim <- function(params){
     for(ix in 1:length(xs)){
       for(inode in 1:length(nodes)){
         # u >= sci: flow from charging to idle state should be less or equal to the total number of vehicles of given SOE in charging state 
-        constr.ineq[i.constr.ineq,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1 
+        constr.ineq[i.constr.ineq,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1/params$dt
         constr.ineq[i.constr.ineq,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1
         i.constr.ineq <- i.constr.ineq + 1
         # w >= sdi: flow from discharging to idle state should be less or equal to the total number of vehicles of given SOE in discharging state 
-        constr.ineq[i.constr.ineq,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1 
+        constr.ineq[i.constr.ineq,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1/params$dt
         constr.ineq[i.constr.ineq,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1
         i.constr.ineq <- i.constr.ineq + 1
         # v >= sic + sid: flow from idle to charging and discharging state should be less or equal to the total number of vehicles of given SOC
-        constr.ineq[i.constr.ineq,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1
+        constr.ineq[i.constr.ineq,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1/params$dt
         constr.ineq[i.constr.ineq,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
         constr.ineq[i.constr.ineq,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
-        i.constr.ineq <- i.constr.ineq + 1
+        #i.constr.ineq <- i.constr.ineq + 1
       }
     }
   }
   
-  #######################
-  # Discharging limit -- should be less or equal to the load demand
-  #######################
-  n.constr <- 1*n.nodes*n.x*n.t
-  constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('dc.lim',1:n.constr),names(obj))))
-  rhs.ineq <- c(rhs.ineq,array(0,n.constr))
-  for(inode in 1:length(nodes)){
-    for(it in 1:length(ts)){
-      for(ix in 1:length(xs)){ 
-        constr.ineq[i.constr.ineq,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- (-1)*Qd(xs[ix])*params$BatteryCapacity/params$dt
-      }
-      rhs.ineq[i.constr.ineq] <- ifelse(length(which((load[,time] == ts[it] & load[,node] == nodes[inode])=='TRUE',arr.ind=T)) >= 1,load[time == ts[it] & node == nodes[inode], demand],0)
-      #my.cat(rhs.ineq[i.constr.ineq])
-      i.constr.ineq <- i.constr.ineq + 1
-    }
-  }
+  ########################
+  ## Discharging limit -- should be less or equal to the load demand
+  ########################
+  #n.constr <- 1*n.nodes*n.x*n.t
+  #constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('dc.lim',1:n.constr),names(obj))))
+  #rhs.ineq <- c(rhs.ineq,array(0,n.constr))
+  #for(inode in 1:length(nodes)){
+    #for(it in 1:length(ts)){
+      #for(ix in 1:length(xs)){ 
+        #constr.ineq[i.constr.ineq,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- (-1)*Qd(xs[ix])*params$BatteryCapacity/params$dt
+      #}
+      #rhs.ineq[i.constr.ineq] <- ifelse(length(which((load[,time] == ts[it] & load[,node] == nodes[inode])=='TRUE',arr.ind=T)) >= 1,load[time == ts[it] & node == nodes[inode], demand],0)
+      ##my.cat(rhs.ineq[i.constr.ineq])
+      #i.constr.ineq <- i.constr.ineq + 1
+    #}
+  #}
   
-  #------------------------------------------ Condtions until this line --------------------------------------------------#
+  #------------------------------------------ End Contraints --------------------------------------------------#
   
   
   #write.csv(rbind(obj,constr,constr.ineq),file=pp(ev.amod.shared,'model/debugging/tiny.csv'))
@@ -254,8 +276,7 @@ ev.amod.sim <- function(params){
     my.cat('animating')
     soln <- sol$solution
     names(soln) <- names(obj)
-    sys <- parse.results(soln)
-    animate.soln(sys)
+    sol$sys <- parse.results(soln)
 
     #ggplot(sys[t%%5==0],aes(x=x,y=val,colour=var))+geom_point()+facet_wrap(~t)
     #ggplot(sys[var%in%c('sic','sid')&t%%5==0],aes(x=x,y=val,colour=var))+geom_line()+facet_wrap(~t)
@@ -263,8 +284,20 @@ ev.amod.sim <- function(params){
   return(sol)
 }
 
-params$T <- 100
+params$T <- 50
 params$dx <- 0.05
-params$dt <- 5
+params$dt <- 2
+params$FleetSize <- 330
 params$NodeFile <- pp(ev.amod.shared,'model/inputs/tiny/nodes.csv')
 sol <- ev.amod.sim(params)
+sys <- sol$sys
+animate.soln(sol$sys)
+
+# Debugging
+
+# Check for conservation of vehicles
+setkey(sys,t,var)
+sys[-grep('si',var),list(sum(val*params$dx)),by=c('t')]
+#sys[t<=5,list(round(sum(val*params$dx),1)),by=c('t','var')]
+#sys[x>=0.9 & t<=5,list(round(sum(val*params$dx),1)),by=c('t','x','var')]
+
