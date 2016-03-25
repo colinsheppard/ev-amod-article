@@ -581,16 +581,16 @@ The equations of state are discretized using the Lax-Wendroff method for numeric
 Firstly, we constrain the size of the flows between states $u$, $v$, and $w$ to be no greater than the number of vehicles in those states:
 
 \begin{eqnarray*}
-    -\sigma_{I_i \rightarrow C_i}(x,t) & <= & u_i(x,t) \\
-    \sigma_{I_i \rightarrow C_i}(x,t) + \sigma_{I_i \rightarrow D_i}(x,t) & <= & v_i(x,t) \\
-    -\sigma_{I_i \rightarrow D_i}(x,t) & <= & w_i(x,t) 
+    -\sigma_{I_i \rightarrow C_i}(x,t) & <= & u_i(x,t) / \Delta t \\
+    \sigma_{I_i \rightarrow C_i}(x,t) + \sigma_{I_i \rightarrow D_i}(x,t) & <= & v_i(x,t) / \Delta t \\
+    -\sigma_{I_i \rightarrow D_i}(x,t) & <= & w_i(x,t) / \Delta t
 \end{eqnarray*}
 ~\\ 
 We also require that as charging vehicles reach an SOE of 1 or as discharging vehicles reach an SOE of 0, they immediately flow to the Idle state.
 
 \begin{eqnarray*}
-    -\sigma_{I_i \rightarrow C_i}(1,t) & = & u_i(1,t) \\
-    -\sigma_{I_i \rightarrow D_i}(0,t) & = & w_i(0,t) 
+    -\sigma_{I_i \rightarrow C_i}(1,t) & = & u_i(1,t) / \Delta t \\
+    -\sigma_{I_i \rightarrow D_i}(0,t) & = & w_i(0,t) / \Delta t
 \end{eqnarray*}
 
 ~\\ 
@@ -699,17 +699,17 @@ Currently, we assume electricity demand is constant at all time steps for all cu
 
 %Later:
 
-%\subsection{Discretization}
+\subsection{Discretization}
 
-%\begin{eqnarray*}
-    %u_{i,k}^{n+1} &=& u_{i,k}^{n} - \frac{q_C \Delta t}{2 \Delta x}\left(u_{i,k+1}^{n} - u_{i,k-1}^{n} \right) + \\
-    %&& \frac{(q_C \Delta t)^2}{2 (\Delta x)^2}\left(u_{i,k+1}^{n} - 2u_{i,k}^{n} + u_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow C_i,k}^n \\
-    %v_{i,k}^{n+1} &=& v_{i,k}^{n} + \Delta t \sum_{j\in\mathbb{Z}} \left[ \sigma_{I_i \leftarrow I_j,k}^{\prime,n} + \sigma_{I_i \leftarrow I_j,k}^{o,n} \right. \\
-    %& & ~~~ \left. - \sigma_{I_i \rightarrow I_j,k}^{\prime,n} - \sigma_{I_i \rightarrow I_j,k}^{o,n} \right] \\
-    %&& ~~~ - \Delta t \left( \sigma_{I_i \rightarrow C_i,k}^n + \sigma_{I_i \rightarrow D_i,k}^n \right) \\
-    %w_{i,k}^{n+1} &=& w_{i,k}^{n} - \frac{q_D \Delta t}{2 \Delta x}\left(w_{i,k+1}^{n} - w_{i,k-1}^{n} \right) + \\
-    %&& \frac{(q_D \Delta t)^2}{2 (\Delta x)^2}\left(w_{i,k+1}^{n} - 2w_{i,k}^{n} + w_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow D_i,k}^n \\   
-%\end{eqnarray*}
+\begin{eqnarray*}
+    u_{i,k}^{n+1} &=& u_{i,k}^{n} - \frac{q_C \Delta t}{2 \Delta x}\left(u_{i,k+1}^{n} - u_{i,k-1}^{n} \right) + \\
+    && \frac{(q_C \Delta t)^2}{2 (\Delta x)^2}\left(u_{i,k+1}^{n} - 2u_{i,k}^{n} + u_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow C_i,k}^n \\
+    v_{i,k}^{n+1} &=& v_{i,k}^{n} + \Delta t \sum_{j\in\mathbb{Z}} \left[ \sigma_{I_i \leftarrow I_j,k}^{\prime,n} + \sigma_{I_i \leftarrow I_j,k}^{o,n} \right. \\
+    & & ~~~ \left. - \sigma_{I_i \rightarrow I_j,k}^{\prime,n} - \sigma_{I_i \rightarrow I_j,k}^{o,n} \right] \\
+    && ~~~ - \Delta t \left( \sigma_{I_i \rightarrow C_i,k}^n + \sigma_{I_i \rightarrow D_i,k}^n \right) \\
+    w_{i,k}^{n+1} &=& w_{i,k}^{n} - \frac{q_D \Delta t}{2 \Delta x}\left(w_{i,k+1}^{n} - w_{i,k-1}^{n} \right) + \\
+    && \frac{(q_D \Delta t)^2}{2 (\Delta x)^2}\left(w_{i,k+1}^{n} - 2w_{i,k}^{n} + w_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow D_i,k}^n \\   
+\end{eqnarray*}
 
 %\begin{eqnarray*}
     %K &=& \sum_{i\in\mathbb{Z}} \int_{t=0}^{T} \left[ \rho_{disch}(Q_{dis,i}(t)) Q_{dis,i}(t) + \right. \\ && \left. \rho_{mob}\left(\sum_{j\in\mathbb{Z}}Q_{mob,i}(t)\right)\sum_{j\in\mathbb{Z}}Q_{mob,i,j}(t) - CQ_{ch,i}(t) \right]\\
