@@ -2,6 +2,4 @@
 *.aux
 *.log
 CE295_AMOD_Plus_Outtages.pdf
-
-# why do these files exist, anyways?
-.DS_Store 
+*DS_Store 
