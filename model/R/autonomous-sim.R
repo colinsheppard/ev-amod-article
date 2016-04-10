@@ -4,22 +4,30 @@ source(pp(ev.amod.model,'model/R/run-experiment.R'))
 load(pp(ev.amod.shared,'model/inputs/devo-params.Rdata'))
 source(pp(ev.amod.model,'model/R/misc-functions.R'))
 
-animate.soln <- function(sys){
+animate.soln <- function(the.sys){
   my.cat('animating')
-  sys <- sys[!var%in%c('simp','simn')]
-  sys[,var:=factor(var,c('u','sic','v','sid','w','simp','simn'))]
-  for(node in u(sys$node)){
+  the.sys[,var:=factor(var,c('u','sic','v','sid','w','simp','simn'))]
+  for(the.node in u(the.sys$node)){
     image.i <- 1
-    for(the.t in u(sys$t)){
-      png(filename = pp(ev.amod.shared,'model/results/soln-node',node,'-img',sprintf('%05d',image.i),".png"),width=800,height=500)
-      p<-ggplot(sys[t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(var~.,scales='free_y')+labs(title=pp('t=',the.t))+scale_color_manual(values=c('black','red','black','red','black'))+scale_y_continuous(limits=range(sys$val))
-      #p<-ggplot(sys[t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(var~.)+labs(title=pp('t=',the.t))+scale_y_continuous(limits=range(sys$val))
+    for(the.t in u(the.sys$t)){
+      png(filename = pp(ev.amod.shared,'model/results/soln-node',the.node,'-img',sprintf('%05d',image.i),".png"),width=800,height=500)
+      p<-ggplot(the.sys[!var%in%c('simp','simn') & node==the.node & t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(var~.,scales='free_y')+labs(title=pp('t=',the.t))+scale_color_manual(values=c('black','red','black','red','black'))+scale_y_continuous(limits=range(the.sys[!var%in%c('simp','simn')]$val))
+      #p<-ggplot(the.sys[t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(var~.)+labs(title=pp('t=',the.t))+scale_y_continuous(limits=range(the.sys$val))
       print(p)
       dev.off()
       image.i <- image.i + 1
     }
-    system(pp('ffmpeg -framerate 30 -i ',ev.amod.shared,'model/results/soln-node',node,'-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-node',node,'.mp4'),intern=T,input='Y')
+    system(pp('ffmpeg -framerate 30 -i ',ev.amod.shared,'model/results/soln-node',the.node,'-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-node',the.node,'.mp4'),intern=T,input='Y')
   }
+  image.i <- 1
+  for(the.t in u(the.sys$t)){
+    png(filename = pp(ev.amod.shared,'model/results/soln-transp-img',sprintf('%05d',image.i),".png"),width=500,height=500)
+    p<-ggplot(the.sys[var%in%c('simp','simn') & dir=='to' & t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(inode~jnode,scales='free_y')+labs(title=pp('t=',the.t))+scale_color_manual(values=c('black','red','black','red','black'))+scale_y_continuous(limits=range(the.sys$val))
+    print(p)
+    dev.off()
+    image.i <- image.i + 1
+  }
+  system(pp('ffmpeg -framerate 30 -i ',ev.amod.shared,'model/results/soln-transp-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-transp.mp4'),intern=T,input='Y')
 }
 
 ev.amod.sim <- function(params){
@@ -251,7 +259,6 @@ ev.amod.sim <- function(params){
   # Boundary Conditions
   #######################
   n.constr <- 4*n.nodes*n.t
-  #n.constr <- n.nodes*n.t
   constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('bound',1:n.constr),names(obj))))
   rhs <- c(rhs,array(0,n.constr))
   for(it in 1:length(ts)){
@@ -269,23 +276,62 @@ ev.amod.sim <- function(params){
   #######################
   # Transport Conservation
   #######################
-  n.constr <- 4*n.nodes*n.nodes*(n.t-1)*(n.x-1)
-  #n.constr <- n.nodes*n.t
+  n.constr <- 2*n.nodes^2*n.t*n.x
   constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj))))
   rhs <- c(rhs,array(0,n.constr))
-  for(it in 1:length(ts)){
-    if(it==length(ts))next
-    for(ix in 1:length(xs)){
-      if(ix==1)next
-      for(inode in 1:length(nodes)){
-        for(jnode in 1:length(nodes)){
-          constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          constr[i.constr,pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 
-          i.constr <- i.constr + 1
-          constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          constr[i.constr,pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 
-          i.constr <- i.constr + 1
+  for(inode in 1:length(nodes)){
+    for(jnode in 1:length(nodes)){
+      for(it in 1:length(ts)){
+        for(ix in 1:length(xs)){
+          if(it==length(ts) | ix==1){
+            constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+            i.constr <- i.constr + 1
+            constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+            i.constr <- i.constr + 1
+          }else{
+              constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+              constr[i.constr,pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 
+              i.constr <- i.constr + 1
+              constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+              constr[i.constr,pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 
+              i.constr <- i.constr + 1
+          }
         }
+      }
+    }
+  }
+  n.constr <- n.nodes^2*(n.t+n.x)*2
+  constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj))))
+  rhs <- c(rhs,array(0,n.constr))
+  for(inode in 1:length(nodes)){
+    for(jnode in 1:length(nodes)){
+      for(it in 1:length(ts)){
+        constr[i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[length(xs)],'-t',ts[it])] <- 1
+        i.constr <- i.constr + 1
+        constr[i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[length(xs)],'-t',ts[it])] <- 1
+        i.constr <- i.constr + 1
+      }
+      for(ix in 1:length(xs)){
+        constr[i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t0')] <- 1
+        i.constr <- i.constr + 1
+        constr[i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t0')] <- 1
+        i.constr <- i.constr + 1
+      }
+    }
+  }
+  ########################################################################
+  ## Transport energy limit -- must have minium SOC to make a trip
+  ########################################################################
+  n.constr <- 2*n.nodes^2*n.t
+  constr <- rbind(constr, array(0,c(n.constr,length(obj)),dimnames=list(pp('trans.energy',1:n.constr),names(obj))))
+  rhs <- c(rhs,array(0,n.constr))
+  for(inode in 1:length(nodes)){
+    for(jnode in 1:length(nodes)){
+      for(it in 1:length(ts)){
+        constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x0-t',ts[it])] <- 1
+        i.constr <- i.constr + 1
+        constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x0-t',ts[it])] <- 1
+        i.constr <- i.constr + 1
       }
     }
   }
@@ -347,10 +393,10 @@ ev.amod.sim <- function(params){
     }
   }
   
-  ########################
+  ########################################################################
   ## Discharging limit -- should be less or equal to the load demand
-  ########################
-  n.constr <- 1*n.nodes*n.x*n.t
+  ########################################################################
+  n.constr <- 1*n.nodes*n.t
   constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('dc.lim',1:n.constr),names(obj))))
   rhs.ineq <- c(rhs.ineq,array(0,n.constr))
   for(inode in 1:length(nodes)){
@@ -364,10 +410,10 @@ ev.amod.sim <- function(params){
       i.constr.ineq <- i.constr.ineq + 1
     }
   }
-  ########################
-  ## Transprt limit -- should be less or equal to the mobility demand
-  ########################
-  n.constr <- 1*n.nodes*n.x*n.t
+  ########################################################################
+  ## Transporting with passengers -- should be less or equal to the mobility demand
+  ########################################################################
+  n.constr <- 1*n.nodes^2*n.t
   constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('dc.lim',1:n.constr),names(obj))))
   rhs.ineq <- c(rhs.ineq,array(0,n.constr))
   for(inode in 1:length(nodes)){
