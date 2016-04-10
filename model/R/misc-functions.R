@@ -16,7 +16,10 @@ read.matrix.csv <- function(csvfile){
 parse.results <- function(soln){
   splitted <- str_split(names(soln),"-")
   dt <- data.table(var=unlist(lapply(splitted,function(ll){ ll[1] })),
-                   node=unlist(lapply(splitted,function(ll){ as.numeric(substr(ll[2],2,nchar(ll[2]))) })),
+                   node=unlist(lapply(splitted,function(ll){ ifelse(ll[1]%in%c('simp','simn'),NA,as.numeric(substr(ll[2],2,nchar(ll[2])))) })),
+                   inode=unlist(lapply(splitted,function(ll){ ifelse(ll[1]%in%c('simp','simn'),as.numeric(substr(ll[2],1,str_locate(ll[2],ifelse( str_detect(ll[2],'to'),'to','from'))[,'start']-1)),NA) })),
+                   dir=unlist(lapply(splitted,function(ll){ ifelse(ll[1]%in%c('simp','simn'),ifelse( str_detect(ll[2],'to'),'to','from'),NA) })),
+                   jnode=unlist(lapply(splitted,function(ll){ ifelse(ll[1]%in%c('simp','simn'),as.numeric(substr(ll[2],str_locate(ll[2],ifelse( str_detect(ll[2],'to'),'to','from'))[,'end']+1,nchar(ll[2]))),NA) })),
                    x=unlist(lapply(splitted,function(ll){ as.numeric(substr(ll[3],2,nchar(ll[3]))) })),
                    t=unlist(lapply(splitted,function(ll){ as.numeric(substr(ll[4],2,nchar(ll[4]))) })),
                    val=soln)
