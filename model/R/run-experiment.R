@@ -1,4 +1,4 @@
-load.libraries(c('optparse','yaml','lpSolve','lpSolveAPI','plyr','stringr','ggplot'))
+load.libraries(c('optparse','yaml','lpSolve','lpSolveAPI','plyr','stringr','ggplot2'))
 source(pp(ev.amod.model,'model/R/misc-functions.R'))
 
 option_list <- list(
