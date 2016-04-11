@@ -5,8 +5,8 @@ option_list <- list(
    make_option(c("-v", "--verbose"), action="store_true", default=FALSE, help="Print extra output [%default]")
 )
 if(interactive()){
-  args<-'/Users/critter/GoogleDriveUCB/CE295/ev-amod-outtages/model/inputs/exp.yaml'
-  args<-'/Users/critter/GoogleDriveUCB/CE295/ev-amod-outtages/model/inputs/tiny/tiny.yaml'
+  args<-pp(ev.amod.shared,'model/inputs/exp.yaml')
+  args<-pp(ev.amod.shared,'model/inputs/tiny.yaml')
   args <- parse_args(OptionParser(option_list = option_list,usage = "autonomous-sim.R [experiment YAML file]"),positional_arguments=T,args=args)
   exp.dirs <- args$args
 }else{
