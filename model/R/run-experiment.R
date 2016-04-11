@@ -1,4 +1,4 @@
-load.libraries(c('optparse','yaml','lpSolve','lpSolveAPI'))
+load.libraries(c('optparse','yaml','lpSolve','lpSolveAPI','plyr'))
 source(pp(ev.amod.model,'model/R/misc-functions.R'))
 
 option_list <- list(
@@ -6,7 +6,7 @@ option_list <- list(
 )
 if(interactive()){
   args<-pp(ev.amod.shared,'model/inputs/exp.yaml')
-  args<-pp(ev.amod.shared,'model/inputs/tiny.yaml')
+  args<-pp(ev.amod.shared,'model/inputs/tiny/tiny.yaml')
   args <- parse_args(OptionParser(option_list = option_list,usage = "autonomous-sim.R [experiment YAML file]"),positional_arguments=T,args=args)
   exp.dirs <- args$args
 }else{
