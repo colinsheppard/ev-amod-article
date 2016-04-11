@@ -17,7 +17,7 @@ animate.soln <- function(the.sys){
       dev.off()
       image.i <- image.i + 1
     }
-    system(pp('ffmpeg -framerate 30 -i ',ev.amod.shared,'model/results/soln-node',the.node,'-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-node',the.node,'.mp4'),intern=T,input='Y')
+    system(pp('ffmpeg -framerate 5 -i ',ev.amod.shared,'model/results/soln-node',the.node,'-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-node',the.node,'.mp4'),intern=T,input='Y')
   }
   image.i <- 1
   for(the.t in u(the.sys$t)){
@@ -27,7 +27,7 @@ animate.soln <- function(the.sys){
     dev.off()
     image.i <- image.i + 1
   }
-  system(pp('ffmpeg -framerate 30 -i ',ev.amod.shared,'model/results/soln-transp-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-transp.mp4'),intern=T,input='Y')
+  system(pp('ffmpeg -framerate 5 -i ',ev.amod.shared,'model/results/soln-transp-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-transp.mp4'),intern=T,input='Y')
 }
 
 ev.amod.sim <- function(params){
