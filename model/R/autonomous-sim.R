@@ -342,7 +342,7 @@ ev.amod.sim <- function(params){
       for(it in 1:length(ts)){
         # # Get demand from inode to jnode at time t
         # trip_dim = dem$demand[dem$time == it & dem$orig == inode & dem$dest == jnode]
-        # Get required energy from inode to jnode
+        # Get required SOC from inode to jnode
         pconsm <-  odd[inode,jnode]/params$BatteryCapacity
         # Set up the constraints -- number of vehicles with states less than the minimum SOC to make a trip are zero
         for(ix in 1:length(xs)){
