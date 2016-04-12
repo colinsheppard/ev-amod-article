@@ -3,6 +3,7 @@
 source(pp(ev.amod.model,'model/R/run-experiment.R'))
 load(pp(ev.amod.shared,'model/inputs/devo-params.Rdata'))
 source(pp(ev.amod.model,'model/R/misc-functions.R'))
+params$TravelDistanceFile = pp(ev.amod.shared,'model/inputs/travel-energy.csv');
 
 animate.soln <- function(the.sys){
   my.cat('animating')
@@ -17,7 +18,7 @@ animate.soln <- function(the.sys){
       dev.off()
       image.i <- image.i + 1
     }
-    system(pp('ffmpeg -framerate 30 -i ',ev.amod.shared,'model/results/soln-node',the.node,'-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-node',the.node,'.mp4'),intern=T,input='Y')
+    # system(pp('ffmpeg -framerate 30 -i ',ev.amod.shared,'model/results/soln-node',the.node,'-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-node',the.node,'.mp4'),intern=T,input='Y')
   }
   image.i <- 1
   for(the.t in u(the.sys$t)){
@@ -27,7 +28,7 @@ animate.soln <- function(the.sys){
     dev.off()
     image.i <- image.i + 1
   }
-  system(pp('ffmpeg -framerate 30 -i ',ev.amod.shared,'model/results/soln-transp-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-transp.mp4'),intern=T,input='Y')
+  # system(pp('ffmpeg -framerate 30 -i ',ev.amod.shared,'model/results/soln-transp-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-transp.mp4'),intern=T,input='Y')
 }
 
 ev.amod.sim <- function(params){
@@ -35,7 +36,7 @@ ev.amod.sim <- function(params){
   my.cat('initializing')
   node.meta <- read.dt.csv(params$NodeFile)
   odt <- read.matrix.csv(params$TravelTimeFile)
-  odd <- read.matrix.csv(params$TravelDistanceFile)
+  odd <- read.matrix.csv(params$TravelDistanceFile) # should be revised to energy and price
   dem <- read.dt.csv(params$TripDemand)
   load <- read.dt.csv(params$PowerDemand)
 
@@ -131,7 +132,7 @@ ev.amod.sim <- function(params){
   #######################
   # Equations of State
   #######################
-  if(params$Scheme=='upwind1'){
+  if(params$Scheme=='upwind1'){ # Will use this one for coupled nodes 
     # First order upwind
     n.constr <- 3*(n.t-1)*n.nodes*n.x 
     constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('state',1:n.constr),names(obj))))
@@ -273,9 +274,11 @@ ev.amod.sim <- function(params){
       i.constr <- i.constr + 1
     }
   }
-  #######################
-  # Transport Conservation
-  #######################
+  #############################
+  # Transport Conservation************** 
+  # -- departure of the previous time has to be same with arrival of the next time step
+  # create functions to get dx and dt based on mobility demand data (Origin, destination, and time)
+  #############################
   n.constr <- 2*n.nodes^2*n.t*n.x
   constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj))))
   rhs <- c(rhs,array(0,n.constr))
@@ -283,17 +286,22 @@ ev.amod.sim <- function(params){
     for(jnode in 1:length(nodes)){
       for(it in 1:length(ts)){
         for(ix in 1:length(xs)){
-          if(it==length(ts) | ix==1){
+          if(it==length(ts) | ix==1){ # at boundaries
             constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
             i.constr <- i.constr + 1
             constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
             i.constr <- i.constr + 1
-          }else{
+          }else{ # not at boundaries
+              # departure
               constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-              constr[i.constr,pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 
+              # HERE call a function to get dx and dt at the time t
+              # arrival
+              constr[i.constr,pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 ##  <<< ---- here
               i.constr <- i.constr + 1
+              # departure
               constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-              constr[i.constr,pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 
+              # arrival
+              constr[i.constr,pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 ##  <<< ---- here
               i.constr <- i.constr + 1
           }
         }
@@ -320,18 +328,34 @@ ev.amod.sim <- function(params){
     }
   }
   ########################################################################
-  ## Transport energy limit -- must have minium SOC to make a trip
+  ## Transport energy limit -- must have minium SOC to make a trip **************
+  ## the vehicles at states less than the minimum SOC to make a trip should be 0
+  ## - load mobility data from i to j node at each time
+  ## - rearrange mobility data in order of nodes and by ascending time
+  ## - make the number of vehicles of less than the minimum SOC zero
   ########################################################################
-  n.constr <- 2*n.nodes^2*n.t
+  n.constr <- 2*n.nodes^2*n.t*n.x
   constr <- rbind(constr, array(0,c(n.constr,length(obj)),dimnames=list(pp('trans.energy',1:n.constr),names(obj))))
   rhs <- c(rhs,array(0,n.constr))
-  for(inode in 1:length(nodes)){
-    for(jnode in 1:length(nodes)){
+  for(inode in 1:length(nodes)){ # from i
+    for(jnode in 1:length(nodes)){ # to j
       for(it in 1:length(ts)){
-        constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x0-t',ts[it])] <- 1
-        i.constr <- i.constr + 1
-        constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x0-t',ts[it])] <- 1
-        i.constr <- i.constr + 1
+        # # Get demand from inode to jnode at time t
+        # trip_dim = dem$demand[dem$time == it & dem$orig == inode & dem$dest == jnode]
+        # Get required energy from inode to jnode
+        pconsm <-  odd[inode,jnode]/params$BatteryCapacity
+        # Set up the constraints -- number of vehicles with states less than the minimum SOC to make a trip are zero
+        for(ix in 1:length(xs)){
+          if(xs[ix] <= pconsm){
+            constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1 # with passenger
+            i.constr <- i.constr + 1
+            constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1 # without passenger
+            i.constr <- i.constr + 1
+          }else{
+            i.constr <- i.constr + 1 # do nothing for simp-
+            i.constr <- i.constr + 1 # do nothing for simn-
+          }
+        }
       }
     }
   }
@@ -411,7 +435,7 @@ ev.amod.sim <- function(params){
     }
   }
   ########################################################################
-  ## Transporting with passengers -- should be less or equal to the mobility demand
+  ## Transporting with passengers -- should be less or equal to the mobility demand *********************
   ########################################################################
   n.constr <- 1*n.nodes^2*n.t
   constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('dc.lim',1:n.constr),names(obj))))
@@ -431,7 +455,6 @@ ev.amod.sim <- function(params){
   }
   
   #------------------------------------------ End Contraints --------------------------------------------------#
-  
   
   #write.csv(rbind(obj,constr,constr.ineq),file=pp(ev.amod.shared,'model/debugging/tiny.csv'))
   #write.csv(c(rhs,rhs.ineq),file=pp(ev.amod.shared,'model/debugging/tiny-rhs.csv'))
@@ -483,7 +506,7 @@ sol <- ev.amod.sim(params)
 print(proc.time() - ptm)
 sys <- sol$sys
 
-animate.soln(sol$sys)
+# animate.soln(sol$sys)
 
 # Debugging
 
