@@ -47,6 +47,11 @@ ev.amod.sim <- function(params){
   ts <- seq(0,params$T,by=params$dt)
   n.t <- length(ts)
   
+  # HERE call a function to get dxij and dtij
+  # - input: dt, dx, inode, jnode
+  # - output: dit, dix (number of time/state index to make a trip from inode to jnode)
+  
+  
   Qc <- function(x){ # SOE/min
     if(x==1)return(0)
     params$ChargingRate*params$ChargingEfficiency/params$BatteryCapacity/60 # 60 converts from hour to min
@@ -66,6 +71,12 @@ ev.amod.sim <- function(params){
   }
   wLW2 <- function(x){
     (Qd(x)*params$dt/params$dx)^2/2
+  }
+  getTimeStepNum <- function(dt, inode, jnode){
+    return(round(odt[inode,jnode]/dt))
+  }
+  getStateStepNum <- function(dx, inode, jnode){
+    return(round(odd[inode,jnode]/params$BatteryCapacity/dx))
   }
   my.cat(pp('Courant #: ',roundC(Qc(0.5)*params$dt/params$dx,3),' (charging), ',roundC(-Qd(0.5)*params$dt/params$dx,3),' (discharging)'))
 
@@ -294,15 +305,18 @@ ev.amod.sim <- function(params){
           }else{ # not at boundaries
               # departure
               constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-              # HERE call a function to get dx and dt at the time t
+              # get number of indices for time and space to move from inode to jnode
+              dtij = getTimeStepNum(params$dt,inode,jnode)
+              dxij = getStateStepNum(params$dx,inode,jnode)
               # arrival
-              constr[i.constr,pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 ##  <<< ---- here
+              constr[i.constr,pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-dtij],'-t',ts[it+dxij])] <- -1 ##  <<< ---- this might exceed matrix size. need a condition
               i.constr <- i.constr + 1
               # departure
               constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
               # arrival
-              constr[i.constr,pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 ##  <<< ---- here
+              constr[i.constr,pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-dtij],'-t',ts[it+dxij])] <- -1 ##  <<< ---- this might exceed matrix size. need a condition
               i.constr <- i.constr + 1
+              #!!! NOTE THAT WE STILL NEED TO FIGURE OUT HOW TO KEEP TRACKING VEHICLES IN BETWEEN OPT. WINDOWS
           }
         }
       }
@@ -330,8 +344,6 @@ ev.amod.sim <- function(params){
   ########################################################################
   ## Transport energy limit -- must have minium SOC to make a trip **************
   ## the vehicles at states less than the minimum SOC to make a trip should be 0
-  ## - load mobility data from i to j node at each time
-  ## - rearrange mobility data in order of nodes and by ascending time
   ## - make the number of vehicles of less than the minimum SOC zero
   ########################################################################
   n.constr <- 2*n.nodes^2*n.t*n.x
@@ -340,8 +352,6 @@ ev.amod.sim <- function(params){
   for(inode in 1:length(nodes)){ # from i
     for(jnode in 1:length(nodes)){ # to j
       for(it in 1:length(ts)){
-        # # Get demand from inode to jnode at time t
-        # trip_dim = dem$demand[dem$time == it & dem$orig == inode & dem$dest == jnode]
         # Get required SOC from inode to jnode
         pconsm <-  odd[inode,jnode]/params$BatteryCapacity
         # Set up the constraints -- number of vehicles with states less than the minimum SOC to make a trip are zero
