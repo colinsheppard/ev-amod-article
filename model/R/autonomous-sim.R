@@ -35,7 +35,8 @@ ev.amod.sim <- function(params){
   my.cat('initializing')
   node.meta <- read.dt.csv(params$NodeFile)
   odt <- read.matrix.csv(params$TravelTimeFile)
-  odd <- read.matrix.csv(params$TravelDistanceFile)
+  ode <- read.matrix.csv(params$TravelEnergyFile)
+  odf <- read.matrix.csv(params$TravelFareFile)
   dem <- read.dt.csv(params$TripDemand)
   load <- read.dt.csv(params$PowerDemand)
 
@@ -320,21 +321,35 @@ ev.amod.sim <- function(params){
     }
   }
   ########################################################################
-  ## Transport energy limit -- must have minium SOC to make a trip
+  ## Transport energy limit -- must have minium SOC to make a trip 
+  ## the number of departures at SOC less than the minimum SOC to make a trip should be 0
+  ## - load mobility data from i to j node at each time
+  ## - rearrange mobility data in order of nodes and by ascending time
+  ## - make the number of vehicles of less than the minimum SOC zero
   ########################################################################
-  n.constr <- 2*n.nodes^2*n.t
-  constr <- rbind(constr, array(0,c(n.constr,length(obj)),dimnames=list(pp('trans.energy',1:n.constr),names(obj))))
-  rhs <- c(rhs,array(0,n.constr))
-  for(inode in 1:length(nodes)){
-    for(jnode in 1:length(nodes)){
+  n.constr <- 2*n.nodes^2*n.t*n.x # note that this is the max number of new constraints but it's complicated to calc 
+                                  # the real number ahead of time so we figure out the final size dynamically
+  new.constr <- array(0,c(n.constr,length(obj)),dimnames=list(pp('trans.energy',1:n.constr),names(obj)))
+  new.rhs <- array(0,n.constr)
+  new.i.constr <- 0
+  for(inode in 1:length(nodes)){ # from i
+    for(jnode in 1:length(nodes)){ # to j
       for(it in 1:length(ts)){
-        constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x0-t',ts[it])] <- 1
-        i.constr <- i.constr + 1
-        constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x0-t',ts[it])] <- 1
-        i.constr <- i.constr + 1
+        # Get required SOE from inode to jnode
+        soe.min <-  ode[inode,jnode]/params$BatteryCapacity
+        # Set up the constraints -- flow of vehicles with states less than the minimum SOE to make a trip is zero
+        for(ix in which(xs <= soe.min)){
+          new.constr[new.i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1 # with passenger
+          new.i.constr <- new.i.constr + 1
+          new.constr[new.i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1 # without passenger
+          new.i.constr <- new.i.constr + 1
+        }
       }
     }
   }
+  constr <- rbind(constr,new.constr[1:new.i.constr,])
+  rhs <- c(rhs,new.rhs[1:new.i.constr])
+  i.constr <- i.constr + new.i.constr  
   #######################
   # FOR DEBUGGING SET SIGMAS TO ZERO
   #######################
