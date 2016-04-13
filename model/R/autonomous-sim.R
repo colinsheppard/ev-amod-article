@@ -47,11 +47,6 @@ ev.amod.sim <- function(params){
   ts <- seq(0,params$T,by=params$dt)
   n.t <- length(ts)
   
-  # HERE call a function to get dxij and dtij
-  # - input: dt, dx, inode, jnode
-  # - output: dit, dix (number of time/state index to make a trip from inode to jnode)
-  
-  
   Qc <- function(x){ # SOE/min
     if(x==1)return(0)
     params$ChargingRate*params$ChargingEfficiency/params$BatteryCapacity/60 # 60 converts from hour to min
