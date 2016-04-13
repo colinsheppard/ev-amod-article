@@ -30,7 +30,7 @@ animate.soln <- function(the.sys){
   system(pp('ffmpeg -framerate 5 -i ',ev.amod.shared,'model/results/soln-transp-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',ev.amod.shared,'model/results/soln-transp.mp4'),intern=T,input='Y')
 }
 
-ev.amod.sim <- function(params){
+ev.amod.sim <- function(params,prev.solution=NULL){
   
   my.cat('initializing')
   node.meta <- read.dt.csv(params$NodeFile)
@@ -86,6 +86,8 @@ ev.amod.sim <- function(params){
   state.suffix <- ddply(state.combs,.(row),function(xx){ pp(pp(names(xx)[c(3,1,2)],xx[c(3,1,2)]),collapse='-')})$V1
   mob.suffix <- c(ddply(mob.combs,.(row),function(xx){ pp(xx[3],'to',xx[4],'-',pp(names(xx)[c(1,2)],xx[c(1,2)],collapse='-'))})$V1,ddply(mob.combs,.(row),function(xx){ pp(xx[3],'from',xx[4],'-',pp(names(xx)[c(1,2)],xx[c(1,2)],collapse='-'))})$V1)
   names(obj) <- c(pp('u-',state.suffix),pp('v-',state.suffix),pp('w-',state.suffix),pp('sic-',state.suffix),pp('sid-',state.suffix),pp('simp-',mob.suffix),pp('simn-',mob.suffix))
+
+  if(!exists('prev.solution') || is.null(prev.solution))prev.solution<-obj
 
   for(it in 1:length(ts)){
     for(ix in 1:length(xs)){
@@ -277,30 +279,34 @@ ev.amod.sim <- function(params){
   #######################
   # Transport Conservation
   #######################
-  n.constr <- 2*n.nodes^2*n.t*n.x
-  constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj))))
-  rhs <- c(rhs,array(0,n.constr))
+  n.constr <- 2*n.nodes^2*n.t*n.x # note that this is the max number of new constraints but it's complicated to calc 
+                                  # the real number ahead of time so we figure out the final size dynamically
+  new.constr <- array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj)))
+  new.rhs <- array(0,n.constr)
+  new.i.constr <- 0
   for(inode in 1:length(nodes)){
     for(jnode in 1:length(nodes)){
-      for(it in 1:length(ts)){
-        for(ix in 1:length(xs)){
-          if(it==length(ts) | ix==1){
-            constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-            i.constr <- i.constr + 1
-            constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-            i.constr <- i.constr + 1
-          }else{
-              constr[i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-              constr[i.constr,pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 
-              i.constr <- i.constr + 1
-              constr[i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-              constr[i.constr,pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-1],'-t',ts[it+1])] <- -1 
-              i.constr <- i.constr + 1
-          }
+      trip.soe.dindex <- round(ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity/params$dx)
+      trip.time.dindex <- round(odt[nodes[inode],nodes[jnode]]/params$dt)
+      for(it in 1:(length(ts)-trip.time.dindex)){
+        for(ix in (1+trip.soe.dindex):length(xs)){
+          new.constr[new.i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+          new.constr[new.i.constr,pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-trip.soe.dindex],'-t',ts[it+trip.time.dindex])] <- -1 
+          new.i.constr <- new.i.constr + 1
+          new.constr[new.i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+          new.constr[new.i.constr,pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[ix-trip.soe.dindex],'-t',ts[it+trip.time.dindex])] <- -1 
+          new.i.constr <- new.i.constr + 1
         }
       }
     }
   }
+  constr <- rbind(constr,new.constr[1:new.i.constr,])
+  rhs <- c(rhs,new.rhs[1:new.i.constr])
+  i.constr <- i.constr + new.i.constr  
+
+  ##############################################
+  # Arrivals from previous window
+  ##############################################
   n.constr <- n.nodes^2*(n.t+n.x)*2
   constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj))))
   rhs <- c(rhs,array(0,n.constr))
@@ -336,7 +342,7 @@ ev.amod.sim <- function(params){
     for(jnode in 1:length(nodes)){ # to j
       for(it in 1:length(ts)){
         # Get required SOE from inode to jnode
-        soe.min <-  ode[inode,jnode]/params$BatteryCapacity
+        soe.min <-  ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity
         # Set up the constraints -- flow of vehicles with states less than the minimum SOE to make a trip is zero
         for(ix in which(xs <= soe.min)){
           new.constr[new.i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1 # with passenger
