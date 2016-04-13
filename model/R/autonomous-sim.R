@@ -327,25 +327,25 @@ ev.amod.sim <- function(params,prev.solution=NULL){
       trip.time.dindex <- round(odt[nodes[inode],nodes[jnode]]/params$dt)
       for(it in 1:trip.time.dindex){
         for(ix in 1:(length(xs)-trip.soe.dindex)){
-          new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[trip.soe.dindex+ix],'-t',ts[length(ts)-trip.time.dindex+it])]
-          new.i.constr <- new.i.constr + 1
-          new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[trip.soe.dindex+ix],'-t',ts[length(ts)-trip.time.dindex+it])]
-          new.i.constr <- new.i.constr + 1
-        
           # new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          # new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+1])]
+          # new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[trip.soe.dindex+ix],'-t',ts[length(ts)-trip.time.dindex+it])]
           # new.i.constr <- new.i.constr + 1
           # new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          # new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+1])]
+          # new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[trip.soe.dindex+ix],'-t',ts[length(ts)-trip.time.dindex+it])]
           # new.i.constr <- new.i.constr + 1
+        
+          new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+          new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+1])]
+          new.i.constr <- new.i.constr + 1
+          new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+          new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+1])]
+          new.i.constr <- new.i.constr + 1
         }
       }
       # set arrivals to zero if they are infeasible from an energy perspective
       if(trip.time.dindex>0){
         for(it in 1:length(ts)){
-          for(ix in (length(xs)-trip.time.dindex+1):length(xs)){
+          for(ix in (length(xs)-trip.soe.dindex+1):length(xs)){
             new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
             new.i.constr <- new.i.constr + 1
             new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
