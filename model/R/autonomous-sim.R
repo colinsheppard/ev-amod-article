@@ -335,10 +335,10 @@ ev.amod.sim <- function(params,prev.solution=NULL){
           # new.i.constr <- new.i.constr + 1
         
           new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+1])]
+          new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+params$MovingHorizonDT])]
           new.i.constr <- new.i.constr + 1
           new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+1])]
+          new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+params$MovingHorizonDT])]
           new.i.constr <- new.i.constr + 1
         }
       }

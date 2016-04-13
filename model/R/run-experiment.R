@@ -45,10 +45,10 @@ for(i in 1:nrow(factor.grid)){
   print(this.level)
   my.cat('Parameter Values: ')
   print(params)
-
   # Now we can run the model
   #ev.amod.sim(params)
 }
 
 save(params,file=pp(ev.amod.shared,'model/inputs/devo-params.Rdata'))
+
 
