@@ -306,26 +306,45 @@ ev.amod.sim <- function(params,prev.solution=NULL){
 
   ##############################################
   # Arrivals from previous window
+  # We need to schedule these arrivals that come
+  # from decisions made in the recent past
   ##############################################
-  n.constr <- n.nodes^2*(n.t+n.x)*2
-  constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj))))
-  rhs <- c(rhs,array(0,n.constr))
+  n.constr <- 2*n.nodes^2*n.t*n.x # note that this is the max number of new constraints but it's complicated to calc 
+                                  # the real number ahead of time so we figure out the final size dynamically
+  new.constr <- array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj)))
+  new.rhs <- array(0,n.constr)
+  new.i.constr <- 0
   for(inode in 1:length(nodes)){
     for(jnode in 1:length(nodes)){
-      for(it in 1:length(ts)){
-        constr[i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[length(xs)],'-t',ts[it])] <- 1
-        i.constr <- i.constr + 1
-        constr[i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[length(xs)],'-t',ts[it])] <- 1
-        i.constr <- i.constr + 1
+      trip.soe.dindex <- round(ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity/params$dx)
+      trip.time.dindex <- round(odt[nodes[inode],nodes[jnode]]/params$dt)
+      for(it in 1:trip.time.dindex){
+        for(ix in 1:(length(xs)-trip.time.dindex)){
+          new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+          new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+1])]
+          new.i.constr <- new.i.constr + 1
+          new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+          new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+1])]
+          new.i.constr <- new.i.constr + 1
+        }
       }
-      for(ix in 1:length(xs)){
-        constr[i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t0')] <- 1
-        i.constr <- i.constr + 1
-        constr[i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t0')] <- 1
-        i.constr <- i.constr + 1
+      # set arrivals to zero if they are infeasible from an energy perspective
+      if(trip.time.dindex>0){
+        for(it in 1:length(ts)){
+          for(ix in (length(xs)-trip.time.dindex+1):length(xs)){
+            new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+            new.i.constr <- new.i.constr + 1
+            new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+            new.i.constr <- new.i.constr + 1
+          }
+        }
       }
     }
   }
+  constr <- rbind(constr,new.constr[1:new.i.constr,])
+  rhs <- c(rhs,new.rhs[1:new.i.constr])
+  i.constr <- i.constr + new.i.constr  
+
   ########################################################################
   ## Transport energy limit -- must have minium SOC to make a trip 
   ## the number of departures at SOC less than the minimum SOC to make a trip should be 0
@@ -356,6 +375,7 @@ ev.amod.sim <- function(params,prev.solution=NULL){
   constr <- rbind(constr,new.constr[1:new.i.constr,])
   rhs <- c(rhs,new.rhs[1:new.i.constr])
   i.constr <- i.constr + new.i.constr  
+
   #######################
   # FOR DEBUGGING SET SIGMAS TO ZERO
   #######################
