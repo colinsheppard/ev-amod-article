@@ -35,6 +35,7 @@ ev.amod.sim <- function(params,prev.solution=NULL){
   
   my.cat('initializing')
   node.meta <- read.dt.csv(params$NodeFile)
+  setkey(node.meta,id)
   odt <- read.matrix.csv(params$TravelTimeFile)
   ode <- read.matrix.csv(params$TravelEnergyFile)
   odf <- read.matrix.csv(params$TravelFareFile)
@@ -100,9 +101,9 @@ ev.amod.sim <- function(params,prev.solution=NULL){
     for(ix in 1:length(xs)){
       for(inode in 1:length(nodes)){
         obj[pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -params$CostCharge*params$dx
-        obj[pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- params$PriceDischarge*params$dx
+        obj[pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- node.meta[J(inode),price.discharge]*params$dx
         for(jnode in 1:length(nodes)){
-          obj[pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- params$PriceTrip*params$dx
+          obj[pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- odf[inode,jnode]*params$dx
         }
       }
     }
@@ -327,13 +328,6 @@ ev.amod.sim <- function(params,prev.solution=NULL){
       trip.time.dindex <- round(odt[nodes[inode],nodes[jnode]]/params$dt)
       for(it in 1:trip.time.dindex){
         for(ix in 1:(length(xs)-trip.soe.dindex)){
-          # new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          # new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[jnode],'from',nodes[inode],'-x',xs[trip.soe.dindex+ix],'-t',ts[length(ts)-trip.time.dindex+it])]
-          # new.i.constr <- new.i.constr + 1
-          # new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          # new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[jnode],'from',nodes[inode],'-x',xs[trip.soe.dindex+ix],'-t',ts[length(ts)-trip.time.dindex+it])]
-          # new.i.constr <- new.i.constr + 1
-        
           new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
           new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+params$MovingHorizonDT])]
           new.i.constr <- new.i.constr + 1
