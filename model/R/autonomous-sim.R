@@ -8,7 +8,7 @@ params$TravelDistanceFile = pp(ev.amod.shared,'model/inputs/travel-energy.csv');
 animate.soln <- function(the.sys){
   my.cat('animating')
   the.sys[,var:=factor(var,c('u','sic','v','sid','w','simp','simn'))]
-  for(the.node in u(the.sys$node)){
+  for(the.node in na.omit(u(the.sys$node))){
     image.i <- 1
     for(the.t in u(the.sys$t)){
       png(filename = pp(ev.amod.shared,'model/results/soln-node',the.node,'-img',sprintf('%05d',image.i),".png"),width=800,height=500)
@@ -46,7 +46,7 @@ ev.amod.sim <- function(params,prev.solution=NULL){
   nodes <- node.meta$id
   xs <- seq(0,1,by=params$dx)
   n.x <- length(xs)
-  ts <- seq(0,params$T,by=params$dt)
+  ts <- seq(0,params$MovingHorizonT,by=params$dt)
   n.t <- length(ts)
   moving.horizon.dindex <- round(params$MovingHorizonDT/params$dt)
   
@@ -101,8 +101,8 @@ ev.amod.sim <- function(params,prev.solution=NULL){
   for(it in 1:length(ts)){
     for(ix in 1:length(xs)){
       for(inode in 1:length(nodes)){
-        obj[pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -params$CostCharge*params$dx
-        obj[pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- node.meta[J(inode),price.discharge]*params$dx
+        obj[pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -params$CostCharge*params$dx*params$ChargingRate*params$dt/60
+        obj[pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- node.meta[J(inode),price.discharge]*params$dx*params$DischargingRate*params$dt/60
         for(jnode in 1:length(nodes)){
           obj[pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- odf[inode,jnode]*params$dx
         }
@@ -473,7 +473,7 @@ ev.amod.sim <- function(params,prev.solution=NULL){
         for(ix in 1:length(xs)){ 
           constr.ineq[i.constr.ineq,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
         }
-        rhs.ineq[i.constr.ineq] <- the.dem[findInterval(ts[it],the.dem[,time])]$demand/params$dx
+        rhs.ineq[i.constr.ineq] <- the.dem[findInterval(ts[it],the.dem[,time])]$demand/params$dx/params$dt
         #my.cat(rhs.ineq[i.constr.ineq])
         i.constr.ineq <- i.constr.ineq + 1
       }
@@ -521,8 +521,8 @@ ev.amod.sim <- function(params,prev.solution=NULL){
 }
 
 params$FullHorizonT <- 100
-params$MovingHorizonDT <- 10
-params$MovingHorizonT <- 20
+params$MovingHorizonDT <- 9
+params$MovingHorizonT <- 30
 params$dx <- 0.02
 params$dt <- 3
 params$FleetSize <- 300
@@ -534,7 +534,7 @@ sol <- ev.amod.sim(params)
 print(proc.time() - ptm)
 sys <- sol$sys
 
-# animate.soln(sol$sys)
+animate.soln(sol$sys)
 
 # Debugging
 
