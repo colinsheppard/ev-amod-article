@@ -521,10 +521,10 @@ ev.amod.sim <- function(params,prev.solution=NULL){
 }
 
 params$FullHorizonT <- 100
-params$MovingHorizonDT <- 9
-params$MovingHorizonT <- 30
-params$dx <- 0.02
-params$dt <- 3
+params$MovingHorizonDT <- 12
+params$MovingHorizonT <- 32
+params$dx <- 0.025
+params$dt <- 4
 params$FleetSize <- 300
 params$NodeFile <- pp(ev.amod.shared,'model/inputs/tiny/nodes-2.csv')
 params$EpsLevel <- 'baggy' # 'tight','medium','loose','baggy'
