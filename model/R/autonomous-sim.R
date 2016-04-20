@@ -337,7 +337,7 @@ ev.amod.sim <- function(params,prev.solution=NULL){
         }
       }
       # set arrivals to zero if they are infeasible from an energy perspective
-      if(trip.time.dindex>0){
+      if(trip.soe.dindex>0){
         for(it in 1:length(ts)){
           for(ix in (length(xs)-trip.soe.dindex+1):length(xs)){
             new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
