@@ -6,7 +6,7 @@ option_list <- list(
 )
 if(interactive()){
   args<-'C:\\Users\\bsj12_000\\Google Drive\\CE295/ev-amod-outtages/model/inputs/exp.yaml'
-  args<-'C:\\Users\\bsj12_000\\Google Drive\\CE295/ev-amod-outtages/model/inputs/tiny/tiny.yaml'
+  args<-pp(ev.amod.shared,'/model/inputs/tiny/tiny.yaml')
   args <- parse_args(OptionParser(option_list = option_list,usage = "autonomous-sim.R [experiment YAML file]"),positional_arguments=T,args=args)
   exp.dirs <- args$args
 }else{
