@@ -48,6 +48,7 @@ ev.amod.sim <- function(params,prev.solution=NULL){
   n.x <- length(xs)
   ts <- seq(0,params$T,by=params$dt)
   n.t <- length(ts)
+  moving.horizon.dindex <- round(params$MovingHorizonDT/params$dt)
   
   Qc <- function(x){ # SOE/min
     if(x==1)return(0)
@@ -329,10 +330,10 @@ ev.amod.sim <- function(params,prev.solution=NULL){
       for(it in 1:trip.time.dindex){
         for(ix in 1:(length(xs)-trip.soe.dindex)){
           new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+params$MovingHorizonDT])]
+          new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])]
           new.i.constr <- new.i.constr + 1
           new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-          new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+params$MovingHorizonDT])]
+          new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])]
           new.i.constr <- new.i.constr + 1
         }
       }
@@ -519,7 +520,9 @@ ev.amod.sim <- function(params,prev.solution=NULL){
   return(sol)
 }
 
-params$T <- 20
+params$FullHorizonT <- 100
+params$MovingHorizonDT <- 10
+params$MovingHorizonT <- 20
 params$dx <- 0.02
 params$dt <- 3
 params$FleetSize <- 300
