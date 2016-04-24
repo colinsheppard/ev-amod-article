@@ -30,7 +30,7 @@ animate.soln <- function(the.sys){
   # system(pp('ffmpeg -framerate 30 -i ',exp$OutputsDirectory,'soln-transp-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',exp$OutputsDirectory,'soln-transp.mp4'),intern=T,input='Y')
 }
 
-ev.amod.sim <- function(params,prev.solution=NULL){
+ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
   
   my.cat('initializing')
   node.meta <- read.dt.csv(params$NodeFile)
@@ -456,7 +456,7 @@ ev.amod.sim <- function(params,prev.solution=NULL){
       for(ix in 1:length(xs)){ 
         constr.ineq[i.constr.ineq,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
       }
-      rhs.ineq[i.constr.ineq] <- the.load[findInterval(ts[it],the.load[,time])]$demand/params$DischargingRate/params$dx
+      rhs.ineq[i.constr.ineq] <- the.load[findInterval(ts[it],the.load[,time]-abs.t)]$demand/params$DischargingRate/params$dx
       #my.cat(rhs.ineq[i.constr.ineq])
       i.constr.ineq <- i.constr.ineq + 1
     }
@@ -474,7 +474,7 @@ ev.amod.sim <- function(params,prev.solution=NULL){
         for(ix in 1:length(xs)){ 
           constr.ineq[i.constr.ineq,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
         }
-        rhs.ineq[i.constr.ineq] <- the.dem[findInterval(ts[it],the.dem[,time])]$demand/params$dx/params$dt
+        rhs.ineq[i.constr.ineq] <- the.dem[findInterval(ts[it],the.dem[,time]-abs.t)]$demand/params$dx/params$dt
         #my.cat(rhs.ineq[i.constr.ineq])
         i.constr.ineq <- i.constr.ineq + 1
       }
@@ -529,7 +529,7 @@ ev.amod.sim.horizon <- function(params,the.timeout=200){
     if(t.initial==t.initials[1]){
       sol <- tryCatch(evalWithTimeout(ev.amod.sim(params),timeout=the.timeout),error=function(e){ print(e); return(NA) })
     }else{
-      sol <- tryCatch(evalWithTimeout(ev.amod.sim(params,sol$solution),timeout=the.timeout),error=function(e){ print(e); return(NA) })
+      sol <- tryCatch(evalWithTimeout(ev.amod.sim(params,sol$solution,abs.t=t.initial),timeout=the.timeout),error=function(e){ print(e); return(NA) })
     }
     if(length(sol)==1 | is.null(sol$sys)){
       stop('Error')
