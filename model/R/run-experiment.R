@@ -1,4 +1,4 @@
-load.libraries(c('optparse','yaml','lpSolve','lpSolveAPI','plyr','stringr','ggplot2'))
+load.libraries(c('optparse','yaml','lpSolve','lpSolveAPI','plyr','stringr','ggplot2','R.utils'))
 source(pp(ev.amod.model,'model/R/misc-functions.R'))
 
 option_list <- list(
@@ -17,6 +17,9 @@ verbose <- args$options$verbose
 exp.file <- args$args[1]
 
 exp <- load.exp.file(exp.file)
+# Make the outputs directory
+exp$OutputsDirectory <- pp(ev.amod.shared,exp$OutputsDirectory,exp$Title,'-',format(Sys.time(),"%Y-%m-%d_%H-%M-%S"),'/')
+make.dir(exp$OutputsDirectory)
 factors <- unlist(lapply(exp$Factors,function(ll){ streval(pp('list(',ll$Code,'=c("',pp(unlist(lapply(ll$Levels,function(lll){ lll$Code })),collapse='","'),'"))')) }),recursive=F)
 factor.grid <- expand.grid(factors)
 
