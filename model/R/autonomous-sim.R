@@ -531,7 +531,7 @@ ev.amod.sim.horizon <- function(params,the.timeout=200){
     }else{
       sol <- tryCatch(evalWithTimeout(ev.amod.sim(params,sol$solution),timeout=the.timeout),error=function(e){ print(e); return(NA) })
     }
-    if(length(sol)==1){
+    if(length(sol)==1 | is.null(sol$sys)){
       stop('Error')
     }
     my.cat(pp('Solved in ',(proc.time() - ptm)[['elapsed']],' seconds'))
@@ -544,15 +544,15 @@ ev.amod.sim.horizon <- function(params,the.timeout=200){
   final.solution
 }
 
-params$FullHorizonT <- 100
-params$MovingHorizonDT <- 12
-params$MovingHorizonT <- 36
-params$dx <- 0.04
-params$dt <- 6
-params$FleetSize <- 300
-params$NodeFile <- pp(ev.amod.shared,'model/inputs/tiny/nodes-2.csv')
-params$EpsLevel <- 'baggy' # 'tight','medium','loose','baggy'
-params$Scheme <- 'upwind1' # 'lax-wendroff', 'upwind2'
+#params$FullHorizonT <- 100
+#params$MovingHorizonDT <- 12
+#params$MovingHorizonT <- 36
+#params$dx <- 0.04
+#params$dt <- 6
+#params$FleetSize <- 300
+#params$NodeFile <- pp(ev.amod.shared,'model/inputs/tiny/nodes-2.csv')
+#params$EpsLevel <- 'baggy' # 'tight','medium','loose','baggy'
+#params$Scheme <- 'upwind1' # 'lax-wendroff', 'upwind2'
 #ptm <- proc.time()
 #sol <- ev.amod.sim(params)
 #print(proc.time() - ptm)
