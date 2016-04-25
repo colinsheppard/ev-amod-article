@@ -291,7 +291,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
                                   # the real number ahead of time so we figure out the final size dynamically
   new.constr <- array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj)))
   new.rhs <- array(0,n.constr)
-  new.i.constr <- 0
+  new.i.constr <- 1
   for(inode in 1:length(nodes)){
     for(jnode in 1:length(nodes)){
       trip.soe.dindex <- round(ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity/params$dx)
@@ -321,7 +321,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
                                   # the real number ahead of time so we figure out the final size dynamically
   new.constr <- array(0,c(n.constr,length(obj)),dimnames=list(pp('transport',1:n.constr),names(obj)))
   new.rhs <- array(0,n.constr)
-  new.i.constr <- 0
+  new.i.constr <- 1
   for(inode in 1:length(nodes)){
     for(jnode in 1:length(nodes)){
       trip.soe.dindex <- round(ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity/params$dx)
@@ -366,7 +366,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
                                   # the real number ahead of time so we figure out the final size dynamically
   new.constr <- array(0,c(n.constr,length(obj)),dimnames=list(pp('trans.energy',1:n.constr),names(obj)))
   new.rhs <- array(0,n.constr)
-  new.i.constr <- 0
+  new.i.constr <- 1
   for(inode in 1:length(nodes)){ # from i
     for(jnode in 1:length(nodes)){ # to j
       for(it in 1:length(ts)){
@@ -562,7 +562,7 @@ final.solution <- ev.amod.sim.horizon(params)
 animate.soln(final.solution)
 
 # Recover from crash/freeze
-recovery.dir <- 'Development-2016-04-23_12-34-57'
+recovery.dir <- 'ExtremeOutages-2016-04-24_19-46-41'
 exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
 final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
 animate.soln(final.solution)
