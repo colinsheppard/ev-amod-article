@@ -518,28 +518,31 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
 }
 
 the.timeout <- 200
-ev.amod.sim.horizon <- function(params,the.timeout=200){
-  t.initials <- seq(0,params$FullHorizonT,by=params$MovingHorizonDT)
+ev.amod.sim.horizon <- function(params,the.timeout=200,t.initial=0,final.solution=NULL,prev.solution=NULL){
+  t.initials <- seq(t.initial,params$FullHorizonT,by=params$MovingHorizonDT)
   solution.list <- list()
+  if(!is.null(final.solution))solution.list[[1]] <- final.solution
   t.initial <- t.initials[1]
   for(t.initial in t.initials){
     my.cat('##############################################################')
     my.cat(pp('Solving Window Starting at T=',t.initial))
     ptm <- proc.time()
-    if(t.initial==t.initials[1]){
+    if(is.null(prev.solution)){
       sol <- tryCatch(evalWithTimeout(ev.amod.sim(params),timeout=the.timeout),error=function(e){ print(e); return(NA) })
     }else{
-      sol <- tryCatch(evalWithTimeout(ev.amod.sim(params,sol$solution,abs.t=t.initial),timeout=the.timeout),error=function(e){ print(e); return(NA) })
+      sol <- tryCatch(evalWithTimeout(ev.amod.sim(params,prev.solution,abs.t=t.initial),timeout=the.timeout),error=function(e){ print(e); return(NA) })
     }
     if(length(sol)==1 | is.null(sol$sys)){
       stop('Error')
     }
     my.cat(pp('Solved in ',(proc.time() - ptm)[['elapsed']],' seconds'))
+    prev.solution <- sol$solution
     solution.list[[length(solution.list)+1]] <- sol$sys[t<params$MovingHorizonDT]
     solution.list[[length(solution.list)]][,t:=t+t.initial]
     final.solution <- rbindlist(solution.list)
     # Write results as we go since you never know when it will hang
-    write.csv(final.solution,pp(exp$OutputsDirectory,'final-solution.csv'))
+    write.csv(prev.solution,pp(exp$OutputsDirectory,'working-solution.csv'))
+    write.csv(final.solution,pp(exp$OutputsDirectory,'final-solution.csv'),row.names=F)
   }
   final.solution
 }
@@ -558,25 +561,33 @@ ev.amod.sim.horizon <- function(params,the.timeout=200){
 #print(proc.time() - ptm)
 #animate.soln(sol$sys)
 
-final.solution <- ev.amod.sim.horizon(params)
-animate.soln(final.solution)
+#final.solution <- ev.amod.sim.horizon(params)
+#animate.soln(final.solution)
 
 # Recover from crash/freeze
-recovery.dir <- 'ExtremeOutages-2016-04-24_19-46-41'
+recovery.dir <- 'ExtremeOutages-2016-04-25_14-45-04'
 exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
 final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
-animate.soln(final.solution)
+working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
+working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
 
-# Debugging
-# Check for conservation of vehicles
-setkey(final.solution,t,var,x)
-final.solution[-grep('sic|sid',var)][is.na(dir) | dir=='to',list(count=sum((head(val,-1)+tail(val,-1))/2*params$dx)),by=c('t','var')]
-state.sums <- final.solution[-grep('si',var)][,list(count=sum((head(val,-1)+tail(val,-1))/2*params$dx)),by=c('t','var')][,list(count=sum(count)),by='t']
-net.sums <- join.on(state.sums,final.solution[grep('simp|simn',var)][,list(count=sum(val)*params$dx*params$dt),by=c('t','dir')],'t','t',c('count','dir'),'trans.')
-net.sums <- data.table(as.data.frame(cast(melt(net.sums,id.vars=c('t','trans.dir')),t ~ variable + trans.dir)))
-net.sums[,':='(count=count_from,count_from=NULL,count_to=NULL)]
-net.sums[,count.next:=count+trans.count_from-trans.count_to]
-final.solution[grep('simp|simn',var)][is.na(dir),list(count=sum(val)*params$dx*params$dt),by=c('t','var')]
-final.solution[t<=5,list(round(sum(val*params$dx),1)),by=c('t','var')]
-final.solution[x>=0.9 & t<=5,list(round(sum(val*params$dx),1)),by=c('t','x','var')]
+# Adjust params and reboot
+params$MovingHorizonDT <- 10
+params$MovingHorizonT <- 40
+final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$MovingHorizonDT,final.solution=final.solution,prev.solution=working.solution)
+
+#animate.soln(final.solution)
+
+## Debugging
+## Check for conservation of vehicles
+#setkey(final.solution,t,var,x)
+#final.solution[-grep('sic|sid',var)][is.na(dir) | dir=='to',list(count=sum((head(val,-1)+tail(val,-1))/2*params$dx)),by=c('t','var')]
+#state.sums <- final.solution[-grep('si',var)][,list(count=sum((head(val,-1)+tail(val,-1))/2*params$dx)),by=c('t','var')][,list(count=sum(count)),by='t']
+#net.sums <- join.on(state.sums,final.solution[grep('simp|simn',var)][,list(count=sum(val)*params$dx*params$dt),by=c('t','dir')],'t','t',c('count','dir'),'trans.')
+#net.sums <- data.table(as.data.frame(cast(melt(net.sums,id.vars=c('t','trans.dir')),t ~ variable + trans.dir)))
+#net.sums[,':='(count=count_from,count_from=NULL,count_to=NULL)]
+#net.sums[,count.next:=count+trans.count_from-trans.count_to]
+#final.solution[grep('simp|simn',var)][is.na(dir),list(count=sum(val)*params$dx*params$dt),by=c('t','var')]
+#final.solution[t<=5,list(round(sum(val*params$dx),1)),by=c('t','var')]
+#final.solution[x>=0.9 & t<=5,list(round(sum(val*params$dx),1)),by=c('t','x','var')]
 

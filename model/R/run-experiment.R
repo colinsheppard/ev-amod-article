@@ -7,6 +7,8 @@ option_list <- list(
 if(interactive()){
   args<-'C:\\Users\\bsj12_000\\Google Drive\\CE295/ev-amod-outtages/model/inputs/exp.yaml'
   args<-pp(ev.amod.shared,'/model/inputs/tiny/tiny.yaml')
+  args<-pp(ev.amod.shared,'/model/inputs/moderate/moderate.yaml')
+  args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme.yaml')
   args <- parse_args(OptionParser(option_list = option_list,usage = "autonomous-sim.R [experiment YAML file]"),positional_arguments=T,args=args)
   exp.dirs <- args$args
 }else{
@@ -20,6 +22,7 @@ exp <- load.exp.file(exp.file)
 # Make the outputs directory
 exp$OutputsDirectory <- pp(ev.amod.shared,exp$OutputsDirectory,exp$Title,'-',format(Sys.time(),"%Y-%m-%d_%H-%M-%S"),'/')
 make.dir(exp$OutputsDirectory)
+file.copy(exp.file,exp$OutputsDirectory)
 factors <- unlist(lapply(exp$Factors,function(ll){ streval(pp('list(',ll$Code,'=c("',pp(unlist(lapply(ll$Levels,function(lll){ lll$Code })),collapse='","'),'"))')) }),recursive=F)
 factor.grid <- expand.grid(factors)
 
