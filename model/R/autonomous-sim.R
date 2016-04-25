@@ -22,7 +22,7 @@ animate.soln <- function(the.sys){
   image.i <- 1
   for(the.t in u(the.sys$t)){
     png(filename = pp(exp$OutputsDirectory,'soln-transp-img',sprintf('%05d',image.i),".png"),width=500,height=500)
-    p<-ggplot(the.sys[var%in%c('simp','simn') & dir=='to' & t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(inode~jnode,scales='free_y')+labs(title=pp('t=',the.t))+scale_color_manual(values=c('black','red','black','red','black'))+scale_y_continuous(limits=range(the.sys$val))
+    p<-ggplot(the.sys[var%in%c('simp','simn') & dir=='to' & t==the.t],aes(x=x,y=val,colour=var))+geom_line()+facet_grid(inode~jnode,scales='free_y')+labs(title=pp('t=',the.t))+scale_color_manual(values=c('black','red','black','red','black'))+scale_y_continuous(limits=range(the.sys[var%in%c('simp','simn') & dir=='to']$val))
     print(p)
     dev.off()
     image.i <- image.i + 1
@@ -38,8 +38,8 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
   odt <- read.matrix.csv(params$TravelTimeFile)
   ode <- read.matrix.csv(params$TravelEnergyFile)
   odf <- read.matrix.csv(params$TravelFareFile)
-  dem <- read.dt.csv(params$TripDemand)
-  load <- read.dt.csv(params$PowerDemand)
+  dem <- read.dt.csv(params$TripDemand) # demand is specified in trips/min
+  load <- read.dt.csv(params$PowerDemand) # load is specified in kW
 
   n.nodes <- nrow(node.meta)
   nodes <- node.meta$id
@@ -111,7 +111,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
         obj[pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -params$CostCharge*params$dx*params$ChargingRate*params$dt/60
         obj[pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- node.meta[J(inode),price.discharge]*params$dx*params$DischargingRate*params$dt/60
         for(jnode in 1:length(nodes)){
-          obj[pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- odf[inode,jnode]*params$dx
+          obj[pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- odf[inode,jnode]*params$dx*params$dt
         }
       }
     }
@@ -474,7 +474,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
         for(ix in 1:length(xs)){ 
           constr.ineq[i.constr.ineq,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
         }
-        rhs.ineq[i.constr.ineq] <- the.dem[findInterval(ts[it],the.dem[,time]-abs.t)]$demand/params$dx/params$dt
+        rhs.ineq[i.constr.ineq] <- the.dem[findInterval(ts[it],the.dem[,time]-abs.t)]$demand/params$dx
         #my.cat(rhs.ineq[i.constr.ineq])
         i.constr.ineq <- i.constr.ineq + 1
       }
