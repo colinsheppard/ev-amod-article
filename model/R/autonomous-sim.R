@@ -30,7 +30,7 @@ animate.soln <- function(the.sys){
   # system(pp('ffmpeg -framerate 30 -i ',exp$OutputsDirectory,'soln-transp-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',exp$OutputsDirectory,'soln-transp.mp4'),intern=T,input='Y')
 }
 
-ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
+ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.timeout=500){
   
   my.cat('initializing')
   node.meta <- read.dt.csv(params$NodeFile)
@@ -48,7 +48,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
   ts <- seq(0,params$MovingHorizonT,by=params$dt)
   n.t <- length(ts)
   moving.horizon.dindex <- round(params$MovingHorizonDT/params$dt)
-  prev.zero.index <- round(params$MovingHorizonDT/params$dt+1)
+  prev.zero.index <- findInterval(params$MovingHorizonDT,ts)
   
   Qc <- function(x){ # SOE/min
     if(x==1)return(0)
@@ -103,7 +103,10 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
         prev.solution[pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[prev.zero.index])] <- params$FleetSize/n.nodes
       }
     }
+    prev.params <- params
   }
+  #prev.xs <- seq(0,1,by=prev.params$dx)
+  #prev.ts <- seq(0,prev.params$MovingHorizonT,by=prev.params$dt)
 
   for(it in 1:length(ts)){
     for(ix in 1:length(xs)){
@@ -134,6 +137,8 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
     for(inode in 1:length(nodes)){
       for(state.var in c('u','v','w')){
         constr[i.constr,pp(state.var,'-i',nodes[inode],'-x',xs[ix],'-t0')] <- 1
+        #prev.x <- prev.xs[findInterval(xs[ix],prev.xs)]
+        #rhs[i.constr] <- prev.solution[pp(state.var,'-i',nodes[inode],'-x',prev.x,'-t',ts[prev.zero.index])]
         rhs[i.constr] <- prev.solution[pp(state.var,'-i',nodes[inode],'-x',xs[ix],'-t',ts[prev.zero.index])]
         i.constr <- i.constr + 1
       }
@@ -171,90 +176,6 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
           # w: discharging state
           constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1+wLW1(xs[ix])*2
           if(ix<length(xs))constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix+1],'-t',ts[it])] <- -wLW1(xs[ix])*2
-          constr[i.constr,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- params$dt
-          constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it+1])] <- -1
-          i.constr <- i.constr + 1
-        }
-      }
-    }
-  }else if(params$Scheme=='upwind2'){
-    # Second order upwind
-    n.constr <- 3*(n.t-1)*n.nodes*n.x 
-    constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('state',1:n.constr),names(obj))))
-    rhs <- c(rhs,array(0,n.constr))
-    for(it in 1:(length(ts)-1)){
-      for(ix in 1:length(xs)){
-        for(inode in 1:length(nodes)){
-          # u: charging state 
-          constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1-3*uLW1(xs[ix])
-          if(ix>1){
-            constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix-1],'-t',ts[it])] <- 4*uLW1(xs[ix])
-            if(ix>2){
-              constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix-2],'-t',ts[it])] <- -uLW1(xs[ix])
-            }else{
-              # use first order upwind 
-              constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1-uLW1(xs[ix])*2 # 2 accounts for not dividing by 2dx
-              constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix-1],'-t',ts[it])] <- uLW1(xs[ix])*2
-            }
-          }else{
-            # use first order upwind with no upwind party
-            constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1-uLW1(xs[ix])*2 # 2 accounts for not dividing by 2dx
-          }
-          constr[i.constr,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- params$dt
-          constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it+1])] <- -1
-          i.constr <- i.constr + 1
-          # v: idle state
-          constr[i.constr,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1
-          constr[i.constr,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- -params$dt
-          constr[i.constr,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- -params$dt
-          constr[i.constr,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it+1])] <- -1
-          i.constr <- i.constr + 1
-          # w: discharging state
-          constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1+3*wLW1(xs[ix])
-          if(ix<length(xs)){
-            constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix+1],'-t',ts[it])] <- -4*wLW1(xs[ix])
-            if(ix<(length(xs)-1)){
-              constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix+2],'-t',ts[it])] <- wLW1(xs[ix])
-            }else{
-              # use first order downwind 
-              constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1+wLW1(xs[ix])*2
-              constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix+1],'-t',ts[it])] <- -wLW1(xs[ix])*2
-            }
-          }else{
-            # use first order downwind with no downwind party
-            constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1+wLW1(xs[ix])*2
-          }
-          constr[i.constr,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- params$dt
-          constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it+1])] <- -1
-          i.constr <- i.constr + 1
-        }
-      }
-    }
-  }else if(params$Scheme=='lax-wendroff'){
-    # lax wendroff
-    n.constr <- 3*(n.t-1)*n.nodes*n.x 
-    constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('state',1:n.constr),names(obj))))
-    rhs <- c(rhs,array(0,n.constr))
-    for(it in 1:(length(ts)-1)){
-      for(ix in 1:length(xs)){
-        for(inode in 1:length(nodes)){
-          # u: charging state 
-          if(ix>1)constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix-1],'-t',ts[it])] <- uLW1(xs[ix])+uLW2(xs[ix])
-          constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1-2*uLW2(xs[ix])
-          if(ix<length(xs))constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix+1],'-t',ts[it])] <- uLW2(xs[ix])-uLW1(xs[ix])
-          constr[i.constr,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- params$dt
-          constr[i.constr,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it+1])] <- -1
-          i.constr <- i.constr + 1
-          # v: idle state
-          constr[i.constr,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1
-          constr[i.constr,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- -params$dt
-          constr[i.constr,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- -params$dt
-          constr[i.constr,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it+1])] <- -1
-          i.constr <- i.constr + 1
-          # w: discharging state
-          if(ix>1)constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix-1],'-t',ts[it])] <- wLW1(xs[ix])+wLW2(xs[ix])
-          constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- 1-2*wLW2(xs[ix])
-          if(ix<length(xs))constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix+1],'-t',ts[it])] <- wLW2(xs[ix])-wLW1(xs[ix])
           constr[i.constr,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])]   <- params$dt
           constr[i.constr,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it+1])] <- -1
           i.constr <- i.constr + 1
@@ -329,10 +250,13 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
       if(trip.time.dindex>0){
         for(it in 1:trip.time.dindex){
           for(ix in 1:(length(xs)-trip.soe.dindex)){
+            #prev.x <- prev.xs[findInterval(xs[ix],prev.xs)]
             new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+            #new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',prev.x,'-t',ts[it+moving.horizon.dindex])]
             new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])]
             new.i.constr <- new.i.constr + 1
             new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
+            #new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',prev.x,'-t',ts[it+moving.horizon.dindex])]
             new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])]
             new.i.constr <- new.i.constr + 1
           }
@@ -483,16 +407,23 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
   
   #------------------------------------------ End Contraints --------------------------------------------------#
   
-  #write.csv(rbind(obj,constr,constr.ineq),file=pp(ev.amod.shared,'model/debugging/tiny.csv'))
-  #write.csv(c(rhs,rhs.ineq),file=pp(ev.amod.shared,'model/debugging/tiny-rhs.csv'))
+  write.csv(obj,file=pp(exp$OutputsDirectory,'objective.csv'))
+  write.csv(constr,file=pp(exp$OutputsDirectory,'constraints-eq.csv'))
+  write.csv(constr,file=pp(exp$OutputsDirectory,'constraints-ineq.csv'))
+  write.csv(rhs,file=pp(exp$OutputsDirectory,'rhs-eq.csv'))
+  write.csv(rhs.ineq,file=pp(exp$OutputsDirectory,'rhs-ineq.csv'))
   
   #######################
   # Solve
   #######################
-  # lprec <- make.lp(nrow(constr),ncol(constr),verbose = "normal")
-  lprec <- make.lp((nrow(constr)+nrow(constr.ineq)),ncol(constr),verbose='important') # row of inequality condition added
+  lprec <- make.lp((nrow(constr)+nrow(constr.ineq)),ncol(constr),verbose='normal') # row of inequality condition added
   lp.control(lprec,sense='max')
   lp.control(lprec,epslevel=params$EpsLevel)
+  #lp.control(lprec,basis.crash='leastdegenerate')
+  #lp.control(lprec,maxpivot=100)
+  lp.control(lprec,pivoting=c('steepestedge','primalfallback'))
+  lp.control(lprec,timeout=the.timeout)
+  #lp.control(lprec,infinite=1e20)
   set.objfn(lprec, obj)
   for(i in 1:nrow(constr)){
     add.constraint(lprec, constr[i,], "=", rhs[i])
@@ -517,8 +448,8 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0){
   return(sol)
 }
 
-the.timeout <- 200
-ev.amod.sim.horizon <- function(params,the.timeout=200,t.initial=0,final.solution=NULL,prev.solution=NULL){
+the.timeout <- 100
+ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solution=NULL,prev.solution=NULL,prev.params=NULL){
   t.initials <- seq(t.initial,params$FullHorizonT,by=params$MovingHorizonDT)
   solution.list <- list()
   if(!is.null(final.solution))solution.list[[1]] <- final.solution
@@ -528,9 +459,9 @@ ev.amod.sim.horizon <- function(params,the.timeout=200,t.initial=0,final.solutio
     my.cat(pp('Solving Window Starting at T=',t.initial))
     ptm <- proc.time()
     if(is.null(prev.solution)){
-      sol <- tryCatch(evalWithTimeout(ev.amod.sim(params),timeout=the.timeout),error=function(e){ print(e); return(NA) })
+      sol <- tryCatch(ev.amod.sim(params,the.timeout=the.timeout),error=function(e){ print(e); return(NA) })
     }else{
-      sol <- tryCatch(evalWithTimeout(ev.amod.sim(params,prev.solution,abs.t=t.initial),timeout=the.timeout),error=function(e){ print(e); return(NA) })
+      sol <- tryCatch(ev.amod.sim(params,prev.solution,the.timeout=the.timeout,abs.t=t.initial,prev.params=prev.params),error=function(e){ print(e); return(NA) })
     }
     if(length(sol)==1 | is.null(sol$sys)){
       stop('Error')
@@ -547,38 +478,37 @@ ev.amod.sim.horizon <- function(params,the.timeout=200,t.initial=0,final.solutio
   final.solution
 }
 
-#params$FullHorizonT <- 100
-#params$MovingHorizonDT <- 12
-#params$MovingHorizonT <- 36
-#params$dx <- 0.04
-#params$dt <- 6
-#params$FleetSize <- 300
-#params$NodeFile <- pp(ev.amod.shared,'model/inputs/tiny/nodes-2.csv')
-#params$EpsLevel <- 'baggy' # 'tight','medium','loose','baggy'
-#params$Scheme <- 'upwind1' # 'lax-wendroff', 'upwind2'
-#ptm <- proc.time()
-#sol <- ev.amod.sim(params)
-#print(proc.time() - ptm)
-#animate.soln(sol$sys)
 
 #final.solution <- ev.amod.sim.horizon(params)
 #animate.soln(final.solution)
 
 # Recover from crash/freeze
-recovery.dir <- 'ExtremeOutages-2016-04-25_14-45-04'
+recovery.dir <- 'ExtremeOutages-2016-04-26_20-04-30'
 exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
 final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
 working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
 working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
-
-# Adjust params and reboot
-params$MovingHorizonDT <- 10
-params$MovingHorizonT <- 40
-final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$MovingHorizonDT,final.solution=final.solution,prev.solution=working.solution)
-
 #animate.soln(final.solution)
 
+# Adjust params and reboot
+prev.params <- params
+#params$EpsLevel <- 'baggy'
+#params$MovingHorizonDT <- 30
+#params$MovingHorizonT <- 60
+#params$dx <- 0.125
+final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
+                                      final.solution=final.solution,prev.solution=working.solution,
+                                      prev.params=prev.params,the.timeout=120)
+
+
 ## Debugging
+#parse.results(working.solution)->working.sys
+#ggplot(working.sys[t==0],aes(x=x,y=val,colour=dir))+geom_point()+facet_wrap(node~var)
+#dev.new()
+#ggplot(load,aes(x=time,y=demand))+geom_line()+facet_wrap(~node)
+#dev.new()
+#ggplot(dem,aes(x=time,y=demand))+geom_line()+facet_grid(orig~dest)
+
 ## Check for conservation of vehicles
 #setkey(final.solution,t,var,x)
 #final.solution[-grep('sic|sid',var)][is.na(dir) | dir=='to',list(count=sum((head(val,-1)+tail(val,-1))/2*params$dx)),by=c('t','var')]
