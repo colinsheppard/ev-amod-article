@@ -215,7 +215,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   new.i.constr <- 1
   for(inode in 1:length(nodes)){
     for(jnode in 1:length(nodes)){
-      trip.soe.dindex <- round(ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity/params$dx)
+      trip.soe.dindex <- ceiling(ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity/params$dx)
       trip.time.dindex <- round(odt[nodes[inode],nodes[jnode]]/params$dt)
       for(it in 1:(length(ts)-trip.time.dindex)){
         for(ix in (1+trip.soe.dindex):length(xs)){
@@ -245,7 +245,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   new.i.constr <- 1
   for(inode in 1:length(nodes)){
     for(jnode in 1:length(nodes)){
-      trip.soe.dindex <- round(ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity/params$dx)
+      trip.soe.dindex <- ceiling(ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity/params$dx)
       trip.time.dindex <- round(odt[nodes[inode],nodes[jnode]]/params$dt)
       if(trip.time.dindex>0){
         for(it in 1:trip.time.dindex){
@@ -295,9 +295,9 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
     for(jnode in 1:length(nodes)){ # to j
       for(it in 1:length(ts)){
         # Get required SOE from inode to jnode
-        soe.min <-  ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity
+        soe.min <-  ceiling(ode[nodes[inode],nodes[jnode]]/params$BatteryCapacity/params$dx)*params$dx
         # Set up the constraints -- flow of vehicles with states less than the minimum SOE to make a trip is zero
-        for(ix in which(xs <= soe.min)){
+        for(ix in which(xs < soe.min)){
           new.constr[new.i.constr,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1 # with passenger
           new.i.constr <- new.i.constr + 1
           new.constr[new.i.constr,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1 # without passenger
@@ -372,7 +372,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   ## Discharging limit -- should be less or equal to the load demand
   ########################################################################
   n.constr <- 1*n.nodes*n.t
-  constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('dc.lim',1:n.constr),names(obj))))
+  constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('discharge.lim',1:n.constr),names(obj))))
   rhs.ineq <- c(rhs.ineq,array(0,n.constr))
   for(inode in 1:length(nodes)){
     the.load <- load[node==nodes[inode]]
@@ -380,7 +380,8 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
       for(ix in 1:length(xs)){ 
         constr.ineq[i.constr.ineq,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
       }
-      rhs.ineq[i.constr.ineq] <- the.load[findInterval(ts[it],the.load[,time]-abs.t)]$demand/params$DischargingRate/params$dx
+      rhs.ineq[i.constr.ineq] <- min(the.load[findInterval(ts[it],the.load[,time]-abs.t)]$demand/params$DischargingRate/params$dx,
+                                     params$FleetSize/params$dx)
       #my.cat(rhs.ineq[i.constr.ineq])
       i.constr.ineq <- i.constr.ineq + 1
     }
@@ -389,7 +390,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   ## Transporting with passengers -- should be less or equal to the mobility demand *********************
   ########################################################################
   n.constr <- 1*n.nodes^2*n.t
-  constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('dc.lim',1:n.constr),names(obj))))
+  constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('transp.lim',1:n.constr),names(obj))))
   rhs.ineq <- c(rhs.ineq,array(0,n.constr))
   for(inode in 1:length(nodes)){
     for(jnode in 1:length(nodes)){
@@ -404,19 +405,48 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
       }
     }
   }
+  ## Non-negativity
+  #n.constr <- 3*n.nodes*n.x*n.t
+  #constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('transp.lim',1:n.constr),names(obj))))
+  #rhs.ineq <- c(rhs.ineq,array(0,n.constr))
+  #for(it in 1:length(ts)){
+    #for(ix in 1:length(xs)){
+      #for(inode in 1:length(nodes)){
+        #constr.ineq[i.constr.ineq,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1
+        #i.constr.ineq <- i.constr.ineq + 1
+        #constr.ineq[i.constr.ineq,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1
+        #i.constr.ineq <- i.constr.ineq + 1
+        #constr.ineq[i.constr.ineq,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1
+        #i.constr.ineq <- i.constr.ineq + 1
+      #}
+    #}
+  #}
+  #n.constr <- n.nodes^2*n.t*n.x
+  #constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('transp.lim',1:n.constr),names(obj))))
+  #rhs.ineq <- c(rhs.ineq,array(0,n.constr))
+  #for(inode in 1:length(nodes)){
+    #for(jnode in 1:length(nodes)){
+      #for(it in 1:length(ts)){
+        #for(ix in 1:length(xs)){ 
+          #constr.ineq[i.constr.ineq,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- -1
+          #i.constr.ineq <- i.constr.ineq + 1
+        #}
+      #}
+    #}
+  #}
   
   #------------------------------------------ End Contraints --------------------------------------------------#
   
   write.csv(obj,file=pp(exp$OutputsDirectory,'objective.csv'))
   write.csv(constr,file=pp(exp$OutputsDirectory,'constraints-eq.csv'))
-  write.csv(constr,file=pp(exp$OutputsDirectory,'constraints-ineq.csv'))
+  write.csv(constr.ineq,file=pp(exp$OutputsDirectory,'constraints-ineq.csv'))
   write.csv(rhs,file=pp(exp$OutputsDirectory,'rhs-eq.csv'))
   write.csv(rhs.ineq,file=pp(exp$OutputsDirectory,'rhs-ineq.csv'))
   
   #######################
   # Solve
   #######################
-  lprec <- make.lp((nrow(constr)+nrow(constr.ineq)),ncol(constr),verbose='normal') # row of inequality condition added
+  lprec <- make.lp(0,ncol(constr),verbose='normal') # verb can be normal detailed full
   lp.control(lprec,sense='max')
   lp.control(lprec,epslevel=params$EpsLevel)
   #lp.control(lprec,basis.crash='leastdegenerate')
@@ -433,8 +463,9 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   }
   lower.b <- rep(0,length(obj))
   lower.b[grep('sic|sid',names(obj))] <- -Inf
-  set.bounds(lprec, lower = lower.b)
-  set.bounds(lprec, upper = rep(Inf,length(obj)))
+  set.bounds(lprec, lower = lower.b, upper = rep(Inf,length(obj)))
+  dimnames(lprec) <- list(c(rownames(constr), rownames(constr.ineq)),names(obj))
+  set.basis(lprec,guess.basis(lprec,rep(0,length(obj))))
 
   my.cat('solving')
   status <- solve(lprec)
@@ -444,11 +475,14 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   if(sol$status==0){
     names(sol$solution) <- names(obj)
     sol$sys <- parse.results(sol$solution)
+  }else{
+    write.csv(get.objective(lprec),file=pp(exp$OutputsDirectory,'debug-objective.csv'))
+    write.csv(get.variables(lprec),file=pp(exp$OutputsDirectory,'debug-variables.csv'))
   }
   return(sol)
 }
 
-the.timeout <- 100
+the.timeout <- 60
 ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solution=NULL,prev.solution=NULL,prev.params=NULL){
   t.initials <- seq(t.initial,params$FullHorizonT,by=params$MovingHorizonDT)
   solution.list <- list()
@@ -483,7 +517,7 @@ ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solutio
 #animate.soln(final.solution)
 
 # Recover from crash/freeze
-recovery.dir <- 'ExtremeOutages-2016-04-26_20-04-30'
+recovery.dir <- 'ExtremeOutages-SmallBattery-2016-04-27_21-21-23'
 exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
 final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
 working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
@@ -493,12 +527,12 @@ working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1
 # Adjust params and reboot
 prev.params <- params
 #params$EpsLevel <- 'baggy'
-#params$MovingHorizonDT <- 30
-#params$MovingHorizonT <- 60
+params$MovingHorizonDT <- 30
+params$MovingHorizonT <- 54
 #params$dx <- 0.125
 final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
                                       final.solution=final.solution,prev.solution=working.solution,
-                                      prev.params=prev.params,the.timeout=120)
+                                      prev.params=prev.params,the.timeout=60)
 
 
 ## Debugging
