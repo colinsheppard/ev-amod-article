@@ -1,8 +1,6 @@
 ### TODO
 source(pp(ev.amod.model,'model/R/run-experiment.R'))
-load(pp(ev.amod.shared,'model/inputs/devo-params.Rdata'))
 source(pp(ev.amod.model,'model/R/misc-functions.R'))
-params$TravelDistanceFile = pp(ev.amod.shared,'model/inputs/travel-energy.csv');
 
 animate.soln <- function(the.sys){
   my.cat('animating')
@@ -70,12 +68,6 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   wLW2 <- function(x){
     (Qd(x)*params$dt/params$dx)^2/2
   }
-  getTimeStepNum <- function(dt, inode, jnode){
-    return(round(odt[inode,jnode]/dt))
-  }
-  getStateStepNum <- function(dx, inode, jnode){
-    return(round(odd[inode,jnode]/params$BatteryCapacity/dx))
-  }
   my.cat(pp('Courant #: ',roundC(Qc(0.5)*params$dt/params$dx,3),' (charging), ',roundC(-Qd(0.5)*params$dt/params$dx,3),' (discharging)'))
 
   #######################
@@ -112,7 +104,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
     for(ix in 1:length(xs)){
       for(inode in 1:length(nodes)){
         obj[pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -params$CostCharge*params$dx*params$ChargingRate*params$dt/60
-        obj[pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- node.meta[J(inode),price.discharge]*params$dx*params$DischargingRate*params$dt/60
+        obj[pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- node.meta[J(nodes[inode]),price.discharge]*params$dx*params$DischargingRate*params$dt/60
         for(jnode in 1:length(nodes)){
           obj[pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- odf[inode,jnode]*params$dx*params$dt
         }
@@ -446,7 +438,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   #######################
   # Solve
   #######################
-  lprec <- make.lp(0,ncol(constr),verbose='normal') # verb can be normal detailed full
+  lprec <- make.lp(0,ncol(constr),verbose='important') # verb can be normal detailed full
   lp.control(lprec,sense='max')
   lp.control(lprec,epslevel=params$EpsLevel)
   #lp.control(lprec,basis.crash='leastdegenerate')
@@ -512,46 +504,23 @@ ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solutio
   final.solution
 }
 
-
-#final.solution <- ev.amod.sim.horizon(params)
+final.solution <- ev.amod.sim.horizon(params)
 #animate.soln(final.solution)
 
-# Recover from crash/freeze
-recovery.dir <- 'ExtremeOutages-SmallBattery-2016-04-27_21-21-23'
-exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
-final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
-working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
-working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
-#animate.soln(final.solution)
+#recovery.dir <- 'ExtremeOutages-2016-04-29_15-10-10'
+#exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
+#load(file=pp(exp$OutputsDirectory,'params.Rdata'))
+#final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
+#working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
+#working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
+##animate.soln(final.solution)
 
-# Adjust params and reboot
-prev.params <- params
-#params$EpsLevel <- 'baggy'
-params$MovingHorizonDT <- 30
-params$MovingHorizonT <- 54
-#params$dx <- 0.125
-final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
-                                      final.solution=final.solution,prev.solution=working.solution,
-                                      prev.params=prev.params,the.timeout=60)
-
-
-## Debugging
-#parse.results(working.solution)->working.sys
-#ggplot(working.sys[t==0],aes(x=x,y=val,colour=dir))+geom_point()+facet_wrap(node~var)
-#dev.new()
-#ggplot(load,aes(x=time,y=demand))+geom_line()+facet_wrap(~node)
-#dev.new()
-#ggplot(dem,aes(x=time,y=demand))+geom_line()+facet_grid(orig~dest)
-
-## Check for conservation of vehicles
-#setkey(final.solution,t,var,x)
-#final.solution[-grep('sic|sid',var)][is.na(dir) | dir=='to',list(count=sum((head(val,-1)+tail(val,-1))/2*params$dx)),by=c('t','var')]
-#state.sums <- final.solution[-grep('si',var)][,list(count=sum((head(val,-1)+tail(val,-1))/2*params$dx)),by=c('t','var')][,list(count=sum(count)),by='t']
-#net.sums <- join.on(state.sums,final.solution[grep('simp|simn',var)][,list(count=sum(val)*params$dx*params$dt),by=c('t','dir')],'t','t',c('count','dir'),'trans.')
-#net.sums <- data.table(as.data.frame(cast(melt(net.sums,id.vars=c('t','trans.dir')),t ~ variable + trans.dir)))
-#net.sums[,':='(count=count_from,count_from=NULL,count_to=NULL)]
-#net.sums[,count.next:=count+trans.count_from-trans.count_to]
-#final.solution[grep('simp|simn',var)][is.na(dir),list(count=sum(val)*params$dx*params$dt),by=c('t','var')]
-#final.solution[t<=5,list(round(sum(val*params$dx),1)),by=c('t','var')]
-#final.solution[x>=0.9 & t<=5,list(round(sum(val*params$dx),1)),by=c('t','x','var')]
-
+#### Adjust params and reboot
+#prev.params <- params
+##params$EpsLevel <- 'baggy'
+#params$MovingHorizonDT <- 20
+#params$MovingHorizonT <- 40
+##params$dx <- 0.125
+#final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
+                                      #final.solution=final.solution,prev.solution=working.solution,
+                                      #prev.params=prev.params,the.timeout=60)

@@ -9,8 +9,8 @@ if(interactive()){
   args<-pp(ev.amod.shared,'/model/inputs/tiny/tiny.yaml')
   args<-pp(ev.amod.shared,'/model/inputs/moderate/moderate.yaml')
   args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme.yaml')
-  args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme-3.yaml')
-  args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme-small-battery.yaml')
+  #args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme-3.yaml')
+  #args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme-small-battery.yaml')
   args <- parse_args(OptionParser(option_list = option_list,usage = "autonomous-sim.R [experiment YAML file]"),positional_arguments=T,args=args)
   exp.dirs <- args$args
 }else{
@@ -57,6 +57,6 @@ for(i in 1:nrow(factor.grid)){
   #ev.amod.sim(params)
 }
 
-save(params,file=pp(ev.amod.shared,'model/inputs/devo-params.Rdata'))
+save(params,file=pp(exp$OutputsDirectory,'params.Rdata'))
 
 
