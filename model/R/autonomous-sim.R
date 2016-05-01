@@ -1,6 +1,7 @@
 ### TODO
 source(pp(ev.amod.model,'model/R/run-experiment.R'))
 source(pp(ev.amod.model,'model/R/misc-functions.R'))
+source(pp(ev.amod.model,'model/R/post-processing.R'))
 
 animate.soln <- function(the.sys){
   my.cat('animating')
@@ -488,26 +489,29 @@ ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solutio
   final.solution
 }
 
-final.solution <- ev.amod.sim.horizon(params,fleet.correct=T)
+recovery.dir <- head(tail(str_split(exp$OutputsDirectory,"/")[[1]],2),1)
+#final.solution <- ev.amod.sim.horizon(params,fleet.correct=T)
 #animate.soln(final.solution)
+#post.process(recovery.dir)
 
-recovery.dir <- 'ExtremeOutages-2016-05-01_12-25-04'
-exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
-load(file=pp(exp$OutputsDirectory,'params.Rdata'))
-final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
-working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
-working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
-#animate.soln(final.solution)
+recovery.dir <- 'ModerateColin-2016-05-01_16-28-30'
 
-### Adjust params and reboot
-prev.params <- params
-#params$EpsLevel <- 'baggy'
-params$MovingHorizonDT <- 10
-params$MovingHorizonT <- 50
-#params$dx <- 0.125
-final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
-                                      final.solution=final.solution,prev.solution=working.solution,
-                                      prev.params=prev.params,the.timeout=90,fleet.correct=T)
+#exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
+#load(file=pp(exp$OutputsDirectory,'params.Rdata'))
+#final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
+#working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
+#working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
+##animate.soln(final.solution)
+
+#### Adjust params and reboot
+#prev.params <- params
+##params$EpsLevel <- 'baggy'
+#params$MovingHorizonDT <- 10
+#params$MovingHorizonT <- 50
+##params$dx <- 0.125
+#final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
+                                      #final.solution=final.solution,prev.solution=working.solution,
+                                      #prev.params=prev.params,the.timeout=90,fleet.correct=T)
 
 #t.initial<-max(final.solution$t)+params$dt 
 #prev.solution<-working.solution
