@@ -28,7 +28,7 @@ animate.soln <- function(the.sys){
   # system(pp('ffmpeg -framerate 30 -i ',exp$OutputsDirectory,'soln-transp-img%05d.png -vf "scale=640:-1" -c:v libx264 -profile:v high -crf 20 -pix_fmt yuv420p -r 30 ',exp$OutputsDirectory,'soln-transp.mp4'),intern=T,input='Y')
 }
 
-ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.timeout=500){
+ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.timeout=500,fleet.correct=F){
   
   my.cat('initializing')
   node.meta <- read.dt.csv(params$NodeFile)
@@ -89,16 +89,15 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   names(obj) <- c(pp('u-',state.suffix),pp('v-',state.suffix),pp('w-',state.suffix),pp('sic-',state.suffix),pp('sid-',state.suffix),pp('simp-',mob.suffix),pp('simn-',mob.suffix))
 
   if(!exists('prev.solution') || is.null(prev.solution)){
+    boundary.correction.factor <- (1/params$dx)/(1/params$dx+1)
     prev.solution<-obj
     for(ix in 1:length(xs)){
       for(inode in 1:length(nodes)){
-        prev.solution[pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[prev.zero.index])] <- params$FleetSize/n.nodes
+        prev.solution[pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[prev.zero.index])] <- params$FleetSize/n.nodes*boundary.correction.factor
       }
     }
     prev.params <- params
   }
-  #prev.xs <- seq(0,1,by=prev.params$dx)
-  #prev.ts <- seq(0,prev.params$MovingHorizonT,by=prev.params$dt)
 
   for(it in 1:length(ts)){
     for(ix in 1:length(xs)){
@@ -121,6 +120,30 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   #######################
   # Initial Conditions
   #######################
+
+  # First we sum the total vehicles in the previous solution for the time step corresponding to time=0 in this run
+  # Then we scale back to the fleet size to manage numerical leakage.
+  prev.num.veh <- 0
+  for(ix in 1:length(xs)){
+    for(inode in 1:length(nodes)){
+      prev.num.veh <- prev.num.veh + params$dx*(prev.solution[pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[prev.zero.index])] + 
+                                                prev.solution[pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[prev.zero.index])] +
+                                                prev.solution[pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[prev.zero.index])])
+      for(jnode in 1:length(nodes)){
+        trip.time.dindex <- round(odt[nodes[inode],nodes[jnode]]/params$dt)
+        if(trip.time.dindex>0){
+          for(it in 1:trip.time.dindex){
+            prev.num.veh <- prev.num.veh + params$dx*params$dt*(
+                              prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it + moving.horizon.dindex])] + 
+                              prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it + moving.horizon.dindex])]) 
+          }
+        }
+      }
+    }
+  }
+  fleet.correction.fact <- ifelse(fleet.correct,mean(params$FleetSize / prev.num.veh,1),1)
+  my.cat(pp('Fleet Correct by ',fleet.correction.fact))
+
   n.constr <- 3*n.nodes*n.x
   constr <- array(0,c(n.constr,length(obj)),dimnames=list(pp('init',1:n.constr),names(obj)))
   rhs <- array(0,n.constr)
@@ -129,9 +152,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
     for(inode in 1:length(nodes)){
       for(state.var in c('u','v','w')){
         constr[i.constr,pp(state.var,'-i',nodes[inode],'-x',xs[ix],'-t0')] <- 1
-        #prev.x <- prev.xs[findInterval(xs[ix],prev.xs)]
-        #rhs[i.constr] <- prev.solution[pp(state.var,'-i',nodes[inode],'-x',prev.x,'-t',ts[prev.zero.index])]
-        rhs[i.constr] <- prev.solution[pp(state.var,'-i',nodes[inode],'-x',xs[ix],'-t',ts[prev.zero.index])]
+        rhs[i.constr] <- prev.solution[pp(state.var,'-i',nodes[inode],'-x',xs[ix],'-t',ts[prev.zero.index])] * fleet.correction.fact
         i.constr <- i.constr + 1
       }
     }
@@ -242,14 +263,13 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
       if(trip.time.dindex>0){
         for(it in 1:trip.time.dindex){
           for(ix in 1:(length(xs)-trip.soe.dindex)){
-            #prev.x <- prev.xs[findInterval(xs[ix],prev.xs)]
             new.constr[new.i.constr,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-            #new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',prev.x,'-t',ts[it+moving.horizon.dindex])]
-            new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])]
+            new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])] * fleet.correction.fact
+            #new.rhs[new.i.constr] <- prev.solution[pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])]
             new.i.constr <- new.i.constr + 1
             new.constr[new.i.constr,pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
-            #new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',prev.x,'-t',ts[it+moving.horizon.dindex])]
-            new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])]
+            new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])] * fleet.correction.fact
+            #new.rhs[new.i.constr] <- prev.solution[pp('simn-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it+moving.horizon.dindex])]
             new.i.constr <- new.i.constr + 1
           }
         }
@@ -301,29 +321,6 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
   constr <- rbind(constr,new.constr[1:new.i.constr,])
   rhs <- c(rhs,new.rhs[1:new.i.constr])
   i.constr <- i.constr + new.i.constr  
-
-  #######################
-  # FOR DEBUGGING SET SIGMAS TO ZERO
-  #######################
-  #n.constr <- 2*n.nodes*n.t*(n.x-1)
-  ##n.constr <- 2*n.nodes*(n.x-1)*3
-  #constr <- rbind(constr,array(0,c(n.constr,length(obj)),dimnames=list(pp('noflow',1:n.constr),names(obj))))
-  #rhs <- c(rhs,array(0,n.constr))
-  #for(it in 1:length(ts)){
-  ##for(it in 1:3){
-    #for(inode in 1:length(nodes)){
-      #for(ix in 2:length(xs)){
-        ##print(pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it]))
-        #constr[i.constr,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
-        #i.constr <- i.constr + 1
-      #}
-      #for(ix in 1:(length(xs)-1)){
-        ##print(pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it]))
-        #constr[i.constr,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
-        #i.constr <- i.constr + 1
-      #}
-    #}
-  #}
   
   #------------------------------------ Inequality Contraints ------------------------------------------#
   
@@ -350,6 +347,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
         constr.ineq[i.constr.ineq,pp('sic-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
         constr.ineq[i.constr.ineq,pp('sid-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
         for(jnode in 1:length(nodes)){
+          trip.time.dindex <- round(odt[nodes[inode],nodes[jnode]]/params$dt)
           constr.ineq[i.constr.ineq,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
           constr.ineq[i.constr.ineq,pp('simn-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
           constr.ineq[i.constr.ineq,pp('simp-',nodes[inode],'from',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- -1
@@ -372,9 +370,13 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
       for(ix in 1:length(xs)){ 
         constr.ineq[i.constr.ineq,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- 1
       }
-      rhs.ineq[i.constr.ineq] <- min(the.load[findInterval(ts[it],the.load[,time]-abs.t)]$demand/params$DischargingRate/params$dx,
-                                     params$FleetSize/params$dx)
-      #my.cat(rhs.ineq[i.constr.ineq])
+      #rhs.ineq[i.constr.ineq] <- min(the.load[findInterval(ts[it],the.load[,time]-abs.t)]$demand/params$DischargingRate/params$dx,
+                                     #params$FleetSize/params$dx)*fleet.correction.fact*1.0000001
+      if(it==1){
+        rhs.ineq[i.constr.ineq] <- the.load[findInterval(ts[it],the.load[,time]-abs.t)]$demand/params$DischargingRate/params$dx*fleet.correction.fact
+      }else{
+        rhs.ineq[i.constr.ineq] <- the.load[findInterval(ts[it],the.load[,time]-abs.t)]$demand/params$DischargingRate/params$dx
+      }
       i.constr.ineq <- i.constr.ineq + 1
     }
   }
@@ -392,40 +394,11 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
           constr.ineq[i.constr.ineq,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- 1
         }
         rhs.ineq[i.constr.ineq] <- the.dem[findInterval(ts[it],the.dem[,time]-abs.t)]$demand/params$dx
-        #my.cat(rhs.ineq[i.constr.ineq])
+        #rhs.ineq[i.constr.ineq] <- the.dem[findInterval(ts[it],the.dem[,time]-abs.t)]$demand/params$dx*fleet.correction.fact
         i.constr.ineq <- i.constr.ineq + 1
       }
     }
   }
-  ## Non-negativity
-  #n.constr <- 3*n.nodes*n.x*n.t
-  #constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('transp.lim',1:n.constr),names(obj))))
-  #rhs.ineq <- c(rhs.ineq,array(0,n.constr))
-  #for(it in 1:length(ts)){
-    #for(ix in 1:length(xs)){
-      #for(inode in 1:length(nodes)){
-        #constr.ineq[i.constr.ineq,pp('u-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1
-        #i.constr.ineq <- i.constr.ineq + 1
-        #constr.ineq[i.constr.ineq,pp('v-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1
-        #i.constr.ineq <- i.constr.ineq + 1
-        #constr.ineq[i.constr.ineq,pp('w-i',nodes[inode],'-x',xs[ix],'-t',ts[it])] <- -1
-        #i.constr.ineq <- i.constr.ineq + 1
-      #}
-    #}
-  #}
-  #n.constr <- n.nodes^2*n.t*n.x
-  #constr.ineq <- rbind(constr.ineq, array(0,c(n.constr,length(obj)),dimnames=list(pp('transp.lim',1:n.constr),names(obj))))
-  #rhs.ineq <- c(rhs.ineq,array(0,n.constr))
-  #for(inode in 1:length(nodes)){
-    #for(jnode in 1:length(nodes)){
-      #for(it in 1:length(ts)){
-        #for(ix in 1:length(xs)){ 
-          #constr.ineq[i.constr.ineq,pp('simp-',nodes[inode],'to',nodes[jnode],'-x',xs[ix],'-t',ts[it])] <- -1
-          #i.constr.ineq <- i.constr.ineq + 1
-        #}
-      #}
-    #}
-  #}
   
   #------------------------------------------ End Contraints --------------------------------------------------#
   
@@ -475,7 +448,7 @@ ev.amod.sim <- function(params,prev.solution=NULL,abs.t=0,prev.params=NULL,the.t
 }
 
 the.timeout <- 60
-ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solution=NULL,prev.solution=NULL,prev.params=NULL){
+ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solution=NULL,prev.solution=NULL,prev.params=NULL,fleet.correct=F){
   t.initials <- seq(t.initial,params$FullHorizonT,by=params$MovingHorizonDT)
   solution.list <- list()
   if(!is.null(final.solution))solution.list[[1]] <- final.solution
@@ -485,9 +458,9 @@ ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solutio
     my.cat(pp('Solving Window Starting at T=',t.initial))
     ptm <- proc.time()
     if(is.null(prev.solution)){
-      sol <- tryCatch(ev.amod.sim(params,the.timeout=the.timeout),error=function(e){ print(e); return(NA) })
+      sol <- tryCatch(ev.amod.sim(params,the.timeout=the.timeout,fleet.correct=fleet.correct),error=function(e){ print(e); return(NA) })
     }else{
-      sol <- tryCatch(ev.amod.sim(params,prev.solution,the.timeout=the.timeout,abs.t=t.initial,prev.params=prev.params),error=function(e){ print(e); return(NA) })
+      sol <- tryCatch(ev.amod.sim(params,prev.solution,the.timeout=the.timeout,abs.t=t.initial,prev.params=prev.params,fleet.correct=fleet.correct),error=function(e){ print(e); return(NA) })
     }
     if(length(sol)==1 | is.null(sol$sys)){
       stop('Error')
@@ -504,23 +477,23 @@ ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solutio
   final.solution
 }
 
-final.solution <- ev.amod.sim.horizon(params)
+final.solution <- ev.amod.sim.horizon(params,fleet.correct=T)
 #animate.soln(final.solution)
 
-#recovery.dir <- 'ExtremeOutages-2016-04-29_15-10-10'
-#exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
-#load(file=pp(exp$OutputsDirectory,'params.Rdata'))
-#final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
-#working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
-#working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
-##animate.soln(final.solution)
+recovery.dir <- 'ModerateOutages-2016-05-01_11-49-41'
+exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
+load(file=pp(exp$OutputsDirectory,'params.Rdata'))
+final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
+working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
+working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
+#animate.soln(final.solution)
 
-#### Adjust params and reboot
-#prev.params <- params
-##params$EpsLevel <- 'baggy'
-#params$MovingHorizonDT <- 20
-#params$MovingHorizonT <- 40
-##params$dx <- 0.125
-#final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
-                                      #final.solution=final.solution,prev.solution=working.solution,
-                                      #prev.params=prev.params,the.timeout=60)
+### Adjust params and reboot
+prev.params <- params
+#params$EpsLevel <- 'baggy'
+params$MovingHorizonDT <- 20
+params$MovingHorizonT <- 40
+#params$dx <- 0.125
+final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
+                                      final.solution=final.solution,prev.solution=working.solution,
+                                      prev.params=prev.params,the.timeout=60,fleet.correct=T)
