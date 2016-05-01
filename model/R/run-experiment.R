@@ -9,8 +9,7 @@ if(interactive()){
   #args<-pp(ev.amod.shared,'/model/inputs/tiny/tiny.yaml')
   #args<-pp(ev.amod.shared,'/model/inputs/moderate/moderate.yaml')
   args<-pp(ev.amod.shared,'/model/inputs/moderate-colin/moderate.yaml')
-  #args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme.yaml')
-  #args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme-3.yaml')
+  args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme.yaml')
   #args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme-small-battery.yaml')
   args <- parse_args(OptionParser(option_list = option_list,usage = "autonomous-sim.R [experiment YAML file]"),positional_arguments=T,args=args)
   exp.dirs <- args$args
