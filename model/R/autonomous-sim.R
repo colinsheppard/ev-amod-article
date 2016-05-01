@@ -474,7 +474,11 @@ ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solutio
     }
     my.cat(pp('Solved in ',(proc.time() - ptm)[['elapsed']],' seconds'))
     prev.solution <- sol$solution
-    solution.list[[length(solution.list)+1]] <- sol$sys[t<params$MovingHorizonDT]
+    if(t.initial == t.initials[1]){
+      solution.list[[length(solution.list)+1]] <- sol$sys[t<=params$MovingHorizonDT]
+    }else{
+      solution.list[[length(solution.list)+1]] <- sol$sys[t>0 & t<=params$MovingHorizonDT]
+    }
     solution.list[[length(solution.list)]][,t:=t+t.initial]
     final.solution <- rbindlist(solution.list)
     # Write results as we go since you never know when it will hang
@@ -487,23 +491,23 @@ ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solutio
 final.solution <- ev.amod.sim.horizon(params,fleet.correct=T)
 #animate.soln(final.solution)
 
-#recovery.dir <- 'ExtremeOutages-2016-05-01_12-07-01'
-#exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
-#load(file=pp(exp$OutputsDirectory,'params.Rdata'))
-#final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
-#working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
-#working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
-##animate.soln(final.solution)
+recovery.dir <- 'ExtremeOutages-2016-05-01_12-25-04'
+exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
+load(file=pp(exp$OutputsDirectory,'params.Rdata'))
+final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
+working.solution <- read.csv(pp(exp$OutputsDirectory,'working-solution.csv'))
+working.solution <- array(working.solution[,2],dimnames=list(working.solution[,1]))
+#animate.soln(final.solution)
 
-#### Adjust params and reboot
-#prev.params <- params
-##params$EpsLevel <- 'baggy'
-#params$MovingHorizonDT <- 20
-#params$MovingHorizonT <- 40
-##params$dx <- 0.125
-#final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
-                                      #final.solution=final.solution,prev.solution=working.solution,
-                                      #prev.params=prev.params,the.timeout=60,fleet.correct=T)
+### Adjust params and reboot
+prev.params <- params
+#params$EpsLevel <- 'baggy'
+params$MovingHorizonDT <- 10
+params$MovingHorizonT <- 50
+#params$dx <- 0.125
+final.solution <- ev.amod.sim.horizon(params,t.initial=max(final.solution$t)+params$dt,
+                                      final.solution=final.solution,prev.solution=working.solution,
+                                      prev.params=prev.params,the.timeout=90,fleet.correct=T)
 
 #t.initial<-max(final.solution$t)+params$dt 
 #prev.solution<-working.solution

@@ -5,6 +5,7 @@ recovery.dir <- 'ExtremeOutages-2016-04-29_19-53-10' # success 10k veh
 recovery.dir <- 'ExtremeOutages-2016-04-30_09-17-10' # success 20k veh
 recovery.dir <- 'ExtremeOutages-2016-04-30_09-37-44' # success 40k veh
 recovery.dir <- 'ModerateOutages-2016-05-01_11-49-41'
+recovery.dir <- 'ExtremeOutages-2016-05-01_12-25-04'
 exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
 load(file=pp(exp$OutputsDirectory,'params.Rdata'))
 final.solution <- data.table(read.csv(pp(exp$OutputsDirectory,'final-solution.csv')))
@@ -84,8 +85,10 @@ final.solution[is.na(next.num.veh) | dindex==1,next.num.veh:=0]
 final.solution[,batt.energy:=(num.veh+next.num.veh)*params$BatteryCapacity*x]
 tot.energy <- params$BatteryCapacity * params$FleetSize 
 soe <- final.solution[var%in%c('u','v','w','simp','simn') & (is.na(dir) | dir=='from'),list(soe=sum(batt.energy)/tot.energy),by='t']
-ggplot(soe,aes(x=t,y=soe))+geom_line()
-ggplot(final.solution[var%in%c('u','v','w','simp','simn') & (is.na(dir) | dir=='from'),list(num=sum(num.veh+next.num.veh)),by='t'],aes(x=t,y=num))+geom_line()
+p <- ggplot(soe,aes(x=t,y=soe))+geom_line()+labs(x="Minute",y="SOE",title=pp('Aggregate SOE (',params$Title,': ',params$FleetSize," veh)"))
+ggsave(p,file=pp(exp$OutputsDirectory,'agg-soe.pdf'),width=8,height=4)
+p<-ggplot(final.solution[var%in%c('u','v','w','simp','simn') & (is.na(dir) | dir=='from'),list(num=sum(num.veh+next.num.veh)),by='t'],aes(x=t,y=num))+geom_line()+labs(x="Minute",y="# Vehicles",title=pp('Number of Vehicles in System (',params$Title,': ',params$FleetSize," veh)"))
+ggsave(p,file=pp(exp$OutputsDirectory,'num-vehicles.pdf'),width=8,height=4)
 
 ## Debugging
 #parse.results(working.solution)->working.sys
