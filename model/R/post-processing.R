@@ -71,8 +71,11 @@ post.process <- function(recovery.dir){
   frac.rev[is.na(node),':='(node=inode,max.rev=max.rev.trip,type='Trips')]
   frac.rev[is.na(inode),':='(max.rev=max.rev.load,type='Outtages')]
   frac.rev[,capture.fraction:=revenue/max.rev]
+  write.csv(frac.rev,pp(exp$OutputsDirectory,'revenue.csv'))
+
   p <- ggplot(frac.rev,aes(x=t,y=capture.fraction,colour=type))+geom_line()+facet_wrap(~node)+labs(x='Minute',y='Revenue Captured / Max Possible Revenue',title=pp('Fraction of Revenue Captured by Node (',params$Title,': ',params$FleetSize,' veh)'))
   ggsave(p,file=pp(exp$OutputsDirectory,'revenue-capture-ratio-by-node.pdf'),width=8,height=4)
+
   p <- ggplot(frac.rev,aes(x=t,y=revenue/1e3,colour=type))+geom_line()+facet_wrap(~node)+labs(x="Minute of Day",y="Revenue ($1000)",title=pp('Revenue per 10 Minute Interval by Node (',params$Title,': ',params$FleetSize," veh)"))
   ggsave(p,file=pp(exp$OutputsDirectory,'revenue-by-node.pdf'),width=8,height=4)
 
@@ -86,9 +89,12 @@ post.process <- function(recovery.dir){
   final.solution[,batt.energy:=(num.veh+next.num.veh)*params$BatteryCapacity*x]
   tot.energy <- params$BatteryCapacity * params$FleetSize 
   soe <- final.solution[var%in%c('u','v','w','simp','simn') & (is.na(dir) | dir=='from'),list(soe=sum(batt.energy)/tot.energy),by='t']
+  write.csv(soe,pp(exp$OutputsDirectory,'agg-soe.csv'))
   p <- ggplot(soe,aes(x=t,y=soe))+geom_line()+labs(x="Minute",y="SOE",title=pp('Aggregate SOE (',params$Title,': ',params$FleetSize," veh)"))
   ggsave(p,file=pp(exp$OutputsDirectory,'agg-soe.pdf'),width=8,height=4)
-  p<-ggplot(final.solution[var%in%c('u','v','w','simp','simn') & (is.na(dir) | dir=='from'),list(num=sum(num.veh+next.num.veh)),by='t'],aes(x=t,y=num))+geom_line()+labs(x="Minute",y="# Vehicles",title=pp('Number of Vehicles in System (',params$Title,': ',params$FleetSize," veh)"))
+  num.veh.sys <- final.solution[var%in%c('u','v','w','simp','simn') & (is.na(dir) | dir=='from'),list(num=sum(num.veh+next.num.veh)),by='t']
+  write.csv(num.veh.sys,pp(exp$OutputsDirectory,'num-veh-in-sys.csv'))
+  p<-ggplot(num.veh.sys,aes(x=t,y=num))+geom_line()+labs(x="Minute",y="# Vehicles",title=pp('Number of Vehicles in System (',params$Title,': ',params$FleetSize," veh)"))
   ggsave(p,file=pp(exp$OutputsDirectory,'num-vehicles.pdf'),width=8,height=4)
 }
 
