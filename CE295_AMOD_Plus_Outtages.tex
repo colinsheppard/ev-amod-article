@@ -485,15 +485,15 @@ The era of fully autonomous, electrified taxi fleets is rapidly approaching, and
 \section{Introduction}
 
 \subsection{Motivation and Background}
-Fully autonomous PEVs have tremendous potential to change the future of mobility. In particular, fleets of autonomous vehicles providing on-demand mobility services will likely play a major role in transportation systems. While the impact of these changes on travel demand is uncertain, it is clear that safety, energy efficiency, and cost of travel will be substantially improved in the future. It's also clear that autonomous on-demand fleets of PEVs will require continued innovation in methods for systems optimization and control.
+Fully autonomous plug-in electric vehicles (PEVs) have tremendous potential to change the future of mobility. In particular, fleets of autonomous vehicles providing on-demand mobility services will likely play a major role in transportation systems. While the impact of these changes on travel demand is uncertain, it is clear that safety, energy efficiency, and cost of travel will be substantially improved in the future. It is also clear that autonomous on-demand fleets of PEVs will require continued innovation in methods for systems optimization and control.
 
-Autonomous PEV fleets could play an important role in providing flexibility services to the future electric grid. Another potential source of ancillary value provided by these vehicles is supplying electricity to buildings during a power outage, when occupancy willingness to pay is particularly high. 
+Autonomous PEV fleets could play an important role in providing flexibility services to the future electric grid. Another potential source of ancillary value provided by these vehicles is supplying electricity to buildings during a power outage, when occupancy willingness to pay is particularly high. The current work examine the additional revenue attained by a fleet of autonomous electric vehicles providing both a mobility-on-demand service and backup power during outages.
 
 \subsection{Relevant Literature}
 
 \subsection{Focus of this Study}
 
-We propose a PDE-based approach to optimize the dispatch of autonomous on-demand PEVs given time varying, spatially distributed demands for trips and demand for electricity due to power outages. The approach will be designed to balance the competing uses for the vehicles by seeking the profit maximizing distribution of simultaneously servicing both demands. We explore a case study based on taxi trip and power outage data from San Francisco. We also assess the impact of fleet size and battery capacity on the levels of service in both markets. 
+We propose a PDE-based approach, as described in \cite{lefloch_pde_2016}, to simulate the optimal dispatch of autonomous on-demand PEVs serving time varying, spatially distributed demand for trips and backup power. The fleet is dispatched to maximize profit earned from serving both trips and power. The revenue earned for each trip serviced or kWh provided depends on the origin and destination of the trip, and the location of the power outage. We consider several fleet sizes, examining differences in vehicle dispatch, state of charge, revenue earned, and unserved demand for trips/power. Key contributions of this work include the geospatial modeling of vehicle mobility, charging \& discharging, and inclusion of backup power as a revenue stream for PEVs.
 
 \section{Technical Description}
 
@@ -513,12 +513,12 @@ We propose a PDE-based approach to optimize the dispatch of autonomous on-demand
 \hline
 \textbf{Symbol} & \textbf{Description}\\
 \hline
-$x$ & PEV Battery SOE\\
-$t$ & Time\\
-$N_n$ & Number of nodes\\
+$x$ & PEV Battery SOE ($dx=0.2$) \\
+$t$ & Time ($dt=10 min$) \\
+$N_n$ & Number of nodes ($3$)\\
 $N_b$ & Number of spatial bins\\
-$E_{max}$ & Battery energy capacity \\
-$\eta(x)$ & Power conversion efficiency during charging \\
+$E_{max}$ & Battery energy capacity ($10 kWh$) \\
+$\eta(x)$ & Power conversion efficiency during charging ($0.86$) \\
 $u_i(x,t)$ & Density of charging PEVs in node $i$\\
 $v_i(x,t)$ & Density of idle PEVs in node $i$\\
 $w_i(x,t)$ & Density of discharging PEVs in node $i$\\
@@ -528,14 +528,14 @@ $\sigma_{I_i \rightarrow I_j}^o(x,t)$ & \parbox[t]{\colmargin}{Flow of PEVs from
 $\sigma_{I_i \rightarrow I_j}^\prime(x,t)$ & \parbox[t]{\colmargin}{ Flow of PEVs from Idle state of node $i$ to Idle state of node $j$ with passengers} \\
 $q_C(x,t)$ & Instantaneous charging power \\
 $q_D(x,t)$ & Instantaneous discharging power \\
-$\mathbb{Z}$ & Set of Transportation Network Nodes (I-IV) \\
-$T$ & Time horizon of the optimization \\
+$\mathbb{Z}$ & Set of Transportation Network Nodes (I, II, IV) \\
+$T$ & Time horizon of the optimization ($50 min$) \\
  & \\
 \hline
 \end{tabular}
 \end{table}
 
-We adopt and extend the scheme developed by \cite{lefloch_pde_2016} for tracking and controlling an aggregation of electric vehicles. The core advantage of the scheme is the recognition that in an autonomous PEV fleet, only the location of vehicles and their state of charge are critical to know at any point in time. Instead of representing individual vehicles explicitly and developing a combinatorial approach to control, we aggregate all vehicles in a node and represent that aggregation as a distribution of vehicles by their state of energy (SOE). Vehicles in node $i$ can be in one of three states: charging, idle, or discharging, which we represent by the state variables $u_i(x,t)$,$v_i(x,t)$, and $w_i(x,t)$, respectively. The system is then characterized by the following coupled partial differential equations (see Table \ref{tab:symbols} for further nomenclature): 
+We adopt and extend the scheme developed by \cite{lefloch_pde_2016} for tracking and controlling an aggregation of electric vehicles. The core advantage of the scheme is the recognition that in an autonomous PEV fleet, only the location of vehicles and their state of charge are critical to know at any point in time. Instead of representing individual vehicles explicitly and developing a combinatorial approach to control, we aggregate all vehicles in a node and represent the aggregate distribution vehicle state of energy (SOE). Vehicles in any node $i$ can be in one of three states: charging, idle, or discharging, which we represent by the state variables $u_i(x,t)$, $v_i(x,t)$, and $w_i(x,t)$, respectively. The system is then characterized by the following coupled partial differential equations (see Table \ref{tab:symbols} for further nomenclature):
 
 \begin{eqnarray*}
     \frac{\partial u_i}{\partial t}(x,t) &=& -\frac{\partial}{\partial x}\left[ q_C(x) u_i(x,t) \right] + \sigma_{I_i \rightarrow C_i}(x,t) \\
@@ -552,16 +552,16 @@ q_C(x) &=& \frac{50}{E_{max}}\eta(x)\frac{1}{60} \\
 q_D(x) &=& \frac{-20}{E_{max}}\frac{1}{60}
 \end{eqnarray*}
 
-The equations make use of an advection term (when the time derivative is linearly related to the spatial derivative) to represent how vehiclees in the charging or discharging state change their SOE over time and move toward an SOE of 1 or 0, respectively. The model is spatially disaggregated, so the three PDEs are repeated for every node in the system and indexed by $i$.
+The equations make use of an advection term (when the time derivative is linearly related to the spatial derivative) to represent how SOE changes over time for vehicles the charging or discharging states, with SOE advecting toward 1 or 0, respectively. The model is spatially disaggregated, so the three PDEs are repeated for every node in the system and indexed by $i$.
 
-Flow terms $\sigma_{I_i \rightarrow C_i}(x,t)$ and $\sigma_{I_i \rightarrow D_i}(x,t)$ capture the transport of vehicles between the three distributions within each node. In addition, there are flow terms to capture transport between the Idle curves of distinct nodes. For a given node $i$ and any other node $j$, four separate terms are used to represent trips with and without passengers ($\sigma^\prime$ and $\sigma^o$ respectively) and departing trips versus arriving trips ($\sigma_{I_i \rightarrow I_j}$ and $\sigma_{I_j \leftarrow I_i}$ respectively).
+Flow terms $\sigma_{I_i \rightarrow C_i}(x,t)$ and $\sigma_{I_i \rightarrow D_i}(x,t)$ capture the transport of vehicles between the three distributions within each node. Additional flow terms capture transport between the Idle curves of distinct nodes. For a given node $i$ and any other node $j$, four separate terms are used to represent trips with and without passengers ($\sigma^\prime$ and $\sigma^o$ respectively) and departing trips versus arriving trips ($\sigma_{I_i \rightarrow I_j}$ and $\sigma_{I_j \leftarrow I_i}$ respectively).
 
-The inter-nodal flow terms are then constrained through the optimization scheme such that departures from a node $i$ to node $j$ are equivalent to the arrivals of vehicles from $i$ to $j$ at a future time and SOE corresponding to the travel time and energy requirements of that trip. The distinction between trips with and without passengers becomes critical in the context of the economic optimization that places monetary value on transporting people over moving empty vehicles.
+The inter-nodal flow terms are then constrained through the optimization scheme such that departures from a node $i$ to node $j$ are equivalent to the arrivals of vehicles from $i$ to $j$ at a future time and with a lower SOE, corresponding to the travel time and energy requirements of that trip. The distinction between trips with and without passengers becomes critical in the context of the economic optimization that places monetary value on transporting people over moving empty vehicles.
 
 \subsection{Optimization Formulation}
 
 \subsubsection{Objective}
-The objective of the optimization is to maximize the operational profit of dispatching the autonomous on-demand PEVs:
+The objective of the optimization is to maximize the operational profit of dispatching the fleet of autonomous on-demand PEVs:
 \begin{eqnarray*}
   \max_{\substack{\sigma_{I_i \rightarrow C_i} \\
     \sigma_{I_i \rightarrow D_i} \\ 
@@ -594,7 +594,7 @@ We also require that as charging vehicles reach an SOE of 1 or as discharging ve
 \end{eqnarray*}
 
 ~\\ 
-Next, we require that trips be conserved between OD pairs but shifted in time and SOE.
+Next, we require that trips be conserved between origin-destination pairs but shifted in time and SOE.
 
 \begin{eqnarray*}
     \sigma_{I_i \rightarrow I_j}^\prime(x,t) & = & \sigma_{I_j \leftarrow I_i}^\prime(x - \Delta x_{i,j},t + \Delta t_{i,j}), ~~~ \{(i,j) \in \mathbb{Z} \times \mathbb{Z}\} \\
@@ -602,7 +602,7 @@ Next, we require that trips be conserved between OD pairs but shifted in time an
 \end{eqnarray*}
 
 ~\\ 
-The values of $\Delta x$ and $\Delta t$ for each node (I-IV) are derived empirically based on real San Francisco taxi fare data collected over the course of a month in June 2012. We averaged trip durations and trip distances for trips from each node $i$ to each node $j$,  scaling the average distance by 5.05 km/kWh to derive $\Delta x_{i,j}$ and taking the average time as $\Delta t_{i,j}$. The derived values are shown in Table II.
+The values of $\Delta x$ and $\Delta t$ for each node (I, II and IV) are derived empirically based on real San Francisco taxi fare data collected over the course of a month in June 2012. We assume a decline in personal vehicle ownership, and increasing reliance on mobility-on-demand services. To account for this increasing demand, we scale demand by a factor of 10 relative to 2012. We averaged trip durations and trip distances for trips from each node $i$ to each node $j$, scaling the average distance by 5.05 km/kWh to derive $\Delta x_{i,j}$ and taking the average time as $\Delta t_{i,j}$. The derived values are shown in Table II.
 
 \begin{table}[!htbp]
     % increase table row spacing, adjust to taste
@@ -639,14 +639,14 @@ The values of $\Delta x$ and $\Delta t$ for each node (I-IV) are derived empiric
     \end{tabular}
 \end{table}
 
-The number of vehicles that are in the discharging state or that are making trips with passengers cannot exceed demand for discharging or mobility.
+The number of vehicles that are in the discharging state or that are making trips with passengers cannot exceed demand for discharging or mobility at that time.
 
 \begin{eqnarray*}
    Q_{dis,i}(t) & \le & D_{dis,i}(t) \\
    Q_{mob,i,j}(t) & \le & D_{mob,i,j}(t) \\
 \end{eqnarray*}
 
-The demands $D_{dis,i}$ and $D_{mob,i,j}$ are exogenously defined and described below. It's useful to note the choice of inequality constraints when constraining $Q_{dis,i}$ and $Q_{mob,i,j}$. This choice serves three purposes: 1) it allows the solution of the optimization to prioritize between the two types of serving demand; 2) it enables simulations where the fleet of vehicles is not sized to meet the peak demand in the system; and 3) it allows the system to be used in an application where power outages occur spontanteously and without foresight (a feature we will explore in future work). 
+The demands $D_{dis,i}$ and $D_{mob,i,j}$ are exogenously defined and described below. The choice of inequality constraints when constraining $Q_{dis,i}$ and $Q_{mob,i,j}$ serves three purposes: 1) it allows the solution of the optimization to prioritize between serving the two types of demand; 2) it enables simulations where the fleet of vehicles is not sized to meet the peak demand in the system; and 3) it allows the system to be used in an application where power outages occur spontanteously and without foresight.
 
 Finally, we require that the vehicles have sufficient state of energy to make trips:
 
@@ -658,39 +658,88 @@ Finally, we require that the vehicles have sufficient state of energy to make tr
 \subsection{Application}
 
 \subsubsection{Spatial Discretization}
-We have divided the City of San Francisco, CA into a highly simplified 4-zone, equal-area network (Figure \ref{fig:sf}). As described above, we analyzed taxi data to characterize the constraints realted to mobility and the prices used in the objective. Below we describe how power outages are characterized from real world data.
+We have divided the City of San Francisco, CA into a highly simplified 4-zone, equal-area network (Figure \ref{fig:sf}). As described above, we analyzed taxi data to characterize the constraints realted to mobility and the prices used in the objective. Below we describe how power outages are characterized from real world data. We observe very little demand for mobility and backup power in Node III; due to additional computational complexity of modeling a four node system, we exclude Node III from the current analysis.
 
 \begin{figure}[!htbp]
   \includegraphics[width=\linewidth]{plots/grid1-cropped.png}
-  \caption{We divide San Francisco into 4 equal-area nodes. Taxi trips from a typical weekday are plotted as red dots.}
+  \caption{We divide San Francisco into 4 equal-area nodes. Origins and destinations of taxi trips over one month (June 2012) are plotted as red dots.}
   \label{fig:sf}
 \end{figure}
 
-\subsubsection{Demand for Mobility}
-
 \subsubsection{Demand for Backup Power}
-A key component of this analysis is to simulate the demand (and willingness to pay) for backup power due to power outages in each node. This work involves three key components: (1) representing outages in each node, (2) quantifying the magnitude of unserved load, (3) estimating price for supplying backup power. The present work focuses on task 1, making simplified assumptions based on the literature for tasks 2 and 3. 
+We estimate demand for backup power using real outage data collected from the Pacific Gas \& Electric Company website. These data report the number and spatial ditribution of outages in the region; these outages are aggregated spatially by node. We estimate the magnitude of unserved load based on the number of customers affected, expected distribution by customer type (i.e., residential, commercial, industrial), and average power demand by customer type, as reported in EIA form 861. We use local population and economic data to estimate the distribution of customer types affected by outages in each node.
 
-To represent outages, we draw on historical outage data from Pacific Gas \& Electric Co. The data are collected using an automated web scraper that collects information about ongoing power outages every 8 minutes. The information include the locations of all ongoing outages and the number of customers affected at each location. We aggregate outages reported in each node to estimate the number of customers affected in each node at a given time.
+We examine two days of real outage data, including one extreme outage scenario (December 31, 2014) and one moderate outage scenario (September 29, 2014). Figure \ref{fig:power_demand} shows the estimated power demand at each node for the Moderate and Extreme outage scenarios.
 
-In the present analysis, we examine two separate days of outage data, including both ``typical'' and ``extreme'' outage scenarios. We use outage data for September 29, 2014 to represent a typical day and December 31, 2014 to represent an extreme day. Figures \ref{fig:typical_day} and \ref{fig:extreme_day} show the number of customers without power in each node and across all nodes at each time step.
+Finally, we estimate the value of providing backup power on demand (in \$/kWh). To do so, we compute the cost of damages incurred due to outages in each node for both outage scenarios using the ICE Calculator \cite{ice_calculator_2015}, and divide the cost of damages by the magnitude of unserved load. Inputs for the damage calculations include: when the outage occurs, the types of customers affected, the duration of the outage, and the magnitude of unserved load. Table \ref{tab:outage_costs} gives the value of backup power in each node for the two outage scenarios.
 
-Currently, we assume electricity demand is constant at all time steps for all customers in a node. Demand in each node will consider the likely breakdown among residential, commercial and industrial customers, applying different rules of thumb regarding power demand for each customer type. Future iterations of the model can include time-varying demand profiles that better represent the magnitude of unserved loads. We assign a fixed cost per kWh discharge to the grid. Future work will examine a dynamic price per kWh affected by (1) the magnitude of unserved loads, and (2) outage duration.
+\begin{table}[!htbp]
+    % increase table row spacing, adjust to taste
+    \renewcommand{\arraystretch}{1}
+    % if using array.sty, it might be a good idea to tweak the value of
+    % \extrarowheight as needed to properly center the text within the cells
+    \caption{Cost of power outages in each node for Extreme and Moderate outage scenarios.}
+    \label{tab:outage_costs}
+    \centering
+    \def\colmargin{6.75cm}
+    % Some packages, such as MDW tools, offer better commands for making tables
+    % than the plain LaTeX2e tabular which is used here.
+    \begin{tabular}{lll}
+    \hline
+    \textbf{Node ($i$)} & \textbf{Extreme} (\$/kWh) & \textbf{Moderate} (\$/kWh) \\
+    \hline
+    I & 20 & 14 \\
+    II & 9  & 32 \\
+    IV & 15 & 46 \\
+    \hline
+    \end{tabular}
+\end{table}
 
 \begin{figure}[!htbp]
-  \includegraphics[width=\linewidth]{plots/typical_day_2014929.png}
-  \caption{Number of customers without power overall (top) and in each node on September 29, 2014. The represented outage data will serve as our typical outage scenario.}
-  \label{fig:typical_day}
+  \includegraphics[width=\linewidth]{plots/power_demand.png}
+  \caption{Power demand at each node (I, II, IV) in the Moderate (left) and Extreme (right) outage scenarios, reprsented by September 29, 2014 and December 31, 2014, respectively. For readability, demand is presented in kWh in the Moderate scenario, and in MWh in the Extreme scenario.}
+  \label{fig:power_demand}
 \end{figure}
-
-\begin{figure}[!htbp]
-  \includegraphics[width=\linewidth]{plots/extreme_day_20141231.png}
-  \caption{Number of customers without power overall (top) and in each node on December 31, 2014. The represented outage data will serve as our extreme outage scenario.}
-  \label{fig:extreme_day}
-\end{figure}
-
 
 \section{Discussion}
+We consider various fleet sizes to determine the approximate number of vehicles needed to capture full demand for trips and power. Figure \ref{fig:revenue_bar} shows the total revenue of the fleet and total revenue per vehicle, including the cost to charge (G2V), revenue earned serving trips (trips), and revenue earned supplying power (V2G). The total revenue earned (total) and maximum available revenue (max) are also shown.
+
+\begin{figure}[!htbp]
+  \includegraphics[width=\linewidth]{plots/full_revenue_barchart.png}
+  \caption{Revenue earned by entire fleet (left) and per vehicle (right) in the Moderate (top) and Extreme (bottom) outage scenarios. Revenue is broken down based on the cost to charge (G2V), revenue earned serving trips (trips), and revenue earned serving power demand (V2G). The total revenue (total) and maximum available revenue (max) are also shown.}
+  \label{fig:revenue_bar}
+\end{figure}
+
+Examining the relative magnitude of the costs and revenue streams, we find that charging costs are almost negligible compared with revenue earned. Revenue earned per unit energy used to serve mobility and power demand are on the order of 10 \$/kWh, outweighing the cost of buying power from the grid (0.25 \$/kWh) by two orders of magnitude. This result suggests that that the vehicles earn more revenue per kWh providing on-demand backup power than they would earn providing more traditional grid services. However, demand for backup power is much higher in the Extreme than in the Moderate scenario. Further, Extreme outages are much less common than Moderate outages, while the grid is continuously procuring grid serices. To estimate the marginal benefit of providing backup power in addition to (or in lieu of) grid services, we must consider the relative frequency of Extreme and Marginal outage days.
+
+Our Extreme scenario is one of 16 days with a large number of Pacific Gas \& Electric Co. customers impacted by power outages in 2014. If we assume the Extreme scenario is representative of these 16 days and that the Moderate scenario is representative of the other 349 days in the year, the 7.5 and 15 thousand vehicle fleets earn \$2 and \$3 thousand (about 1\% and 2\%) additional revenue per vehicle per year serving power demand than they would earn serving mobility only.\footnote{Mobility-only revenue is approximately equal to the revenue earned serving trips in the Moderate outages scenario. In the Moderate scenario, the 15k vehicle fleet captures 100\% of the available mobility revenue. Although smaller fleet sizes capture less of the available revenue, any unserved mobility demand occurs because primarily because the fleet is undersized relative to the demand for passenger trips. In the Extreme scenario, power demand is sufficiently high that some passenger trips are unserved in favor of serving power demand.} 
+
+\cite{sheppard_2016} estimate that personal electric vehicles can earn on the order of \$1000 per year providing ancillary services. The current results suggest that serving power demand during outages may provide more value than traditional grid services. Further, if we consider that a right-sized commercial fleet is likely less flexible than most personal vehicles, we expect the current fleet would earn even less revenue providing grid services. Thus despite the fact that major power outages are rare, serving power demand during outages likely provides more revenue than other grid services. Numerous factors in our analysis could affect these results, including but not limited to: outage cost, outage frequency/duration, vehicle battery size ($E_{max}$), and foresight into future demand for trips and power ($T$).
+
+Next we consider the trade-offs of different fleet sizes. In the Extreme outages scenario, nearly all demand for mobility and power can be served with a 40 thousand vehicle fleet. Figures \ref{fig:time_extreme_40k} and \ref{fig:time_extreme_7500} show the number of vehicles in each state in the Extreme outages scenario with 40 and 7.5 thousand vehicle fleets. States include: in transit with and without passengers, charging, discharging, and idle. 
+
+Although Figure \ref{fig:revenue_bar} shows that 40 thousand vehicles are needed to serve all of the mobility and power demand, Figure \ref{fig:time_extreme_40k} reveals that such a fleet spends most of the simulation in the idle state earning no revenue at all. This fleet is clearly over-sized, even in the Extreme outages scenario. Low revenue per vehicle in Figure \ref{fig:revenue_bar} further supports this conclusion. The 7.5 thousand vehicle fleet earns less revenue overall, but spends very little time in the idle state. Rather, the vehicles spend more time charging than they do in any other state.  
+
+\begin{figure}[!htbp]
+  \includegraphics[width=\linewidth]{plots/states-area-40k.pdf}
+  \caption{Number of vehicles in each state at each time step in the Extreme outages scenario with a 40 thousand vehicle fleet. States include: in transit with and without passengers, charging, discharging, and idle.}
+  \label{fig:time_extreme_40k}
+\end{figure}
+
+\begin{figure}[!htbp]
+  \includegraphics[width=\linewidth]{plots/states-area-7500.pdf}
+  \caption{Number of vehicles in each state at each time step in the Extreme outages scenario with a 40 thousand vehicle fleet. States include: in transit with and without passengers, charging, discharging, and idle.}
+  \label{fig:time_extreme_7500}
+\end{figure}
+
+Figure \ref{fig:soe} shows the aggregate SOE of the fleet with respect to time for the various fleet sizes and outage scenarios. We initialize the fleet with an aggregate SOE of 0.5. The aggregate SOE then consistently drops to below 5\% before any charging occurs; the first charging in Figures \ref{fig:time_extreme_7500} and \ref{fig:time_extreme_40k} occurs at about 50 and 250 minutes, respectively. The entire fleet operates at a very low SOE, cycling out of charging before batteries are fully charged. This cycling is likely due to the limited optimization horizon, as the fleet is dispatched based on perfect foresight over a 50 minute planning horizon. Future work will examine more realistic scenarios expected to increase the operating SOE of the fleet, including: increasing battery size, charging vehicles a fee for entering the charging state (incentivizing full charge once there), and constraining the SOE at the final time step of the planning horizon based on the expected SOE required to serve demand after the planning horizon.
+
+\begin{figure}[!htbp]
+  \includegraphics[width=\linewidth]{plots/soc_v_time.png}
+  \caption{Aggregate fleet state of charge over time for 7.5, 10, and 15 thousand vehicle fleets in the Moderate outages scenario and 7.5, 15 and 40 thousand vehicle fleets in the Extreme outages scenario.}
+  \label{fig:soe}
+\end{figure}
+
 
 \section{Summary}
 
