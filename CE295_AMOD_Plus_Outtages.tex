@@ -495,7 +495,7 @@ Autonomous PEV fleets could play an important role in providing flexibility serv
 \subsection{Relevant Literature}
 The current personal vehicle ownership paradigm involves gross under-utilization of vehicles, as personal vehicles sit idle for most of the day. This under-utilization makes PEV batteries an excellent source of load flexibility, as grid-connected vehicles can charge or discharge as needed while not in use. Numerous studies examine the capabilities \cite{lefloch_pde_2016, lefloch_pde_2015, ota_autonomous_v2g, behrouz_2014} and economics \cite{cpuc_2016, sheppard_bae_2015, ota_autonomous_v2g} of using electric vehicles to provide grid services. However, Sheppard and Bae conclude that privately owned vehicles can earn only about \$100 per year (on average) providing ancillary services \cite{sheppard_bae_2015}. 
 
-Furthermore, technology development and gradual deployment of semi-autonomous safety features suggest that the future of transportation is autonomous. Once autonomous vehicles are deployed at scale, the current paradigm of personal vehicle ownership is likely to change . Although a right-sized, autonomous, commercially operated fleet is likely to be much less flexible than privately owned vehicles, centralized control can increase the magnitude and reliability of aggregate response when price signals are adequate. 
+Furthermore, technology development and gradual deployment of semi-autonomous safety features suggest that the future of transportation is autonomous. Once autonomous vehicles are deployed at scale, the current paradigm of personal vehicle ownership is likely to change. Although a right-sized, autonomous, commercially operated fleet is likely to be much less flexible than privately owned vehicles, centralized control can increase the magnitude and reliability of aggregate response when price signals are adequate. 
 
 Sheppard and Bae demonstrate that electric vehicles can earn limited revenue providing ancillary services. However, energy is most valuable during power outages, when customers are willing to pay more for electricity to avoid costs associated with loss of power (e.g., food spoilage, business closure, reduced manufacturing capacity) \cite{ice_calculator_2015}.
 
@@ -526,7 +526,7 @@ $t$ & Time ($dt=10 min$) \\
 $N_n$ & Number of nodes ($3$)\\
 $N_b$ & Number of spatial bins\\
 $E_{max}$ & Battery energy capacity ($10 kWh$) \\
-$\eta(x)$ & Power conversion efficiency during charging ($0.86$) \cite{veic_2013} \\
+$\eta$ & Power conversion efficiency during charging ($0.86$) \cite{veic_2013} \\
 $u_i(x,t)$ & Density of charging PEVs in node $i$\\
 $v_i(x,t)$ & Density of idle PEVs in node $i$\\
 $w_i(x,t)$ & Density of discharging PEVs in node $i$\\
@@ -538,7 +538,8 @@ $q_C(x,t)$ & Instantaneous charging power \\
 $q_D(x,t)$ & Instantaneous discharging power \\
 $\mathbb{Z}$ & Set of Transportation Network Nodes (I, II, IV) \\
 $T$ & Time horizon of the optimization ($50 min$) \\
- & \\
+$\rho_{dis}(i)$ & Price of servicing load during power outages by node(\$/kWh) \\
+$\rho_{mob}(i,j)$ & Price of servicing mobility demand from node $i$ to node $j$ (\$/trip/minute) \\
 \hline
 \end{tabular}
 \end{table}
@@ -556,8 +557,8 @@ We adopt and extend the scheme developed by \cite{lefloch_pde_2016} for tracking
 Where: 
 
 \begin{eqnarray*}
-q_C(x) &=& \frac{50}{E_{max}}\eta(x)\frac{1}{60} \\
-q_D(x) &=& \frac{-20}{E_{max}}\frac{1}{60}
+q_C(x) &=& \frac{7}{E_{max}}\eta\frac{1}{60} \\
+q_D(x) &=& \frac{-7}{E_{max}}\frac{1}{60}
 \end{eqnarray*}
 
 The equations make use of an advection term (when the time derivative is linearly related to the spatial derivative) to represent how SOE changes over time for vehicles the charging or discharging states, with SOE advecting toward 1 or 0, respectively. The model is spatially disaggregated, so the three PDEs are repeated for every node in the system and indexed by $i$.
@@ -574,13 +575,13 @@ The objective of the optimization is to maximize the operational profit of dispa
   \max_{\substack{\sigma_{I_i \rightarrow C_i} \\
     \sigma_{I_i \rightarrow D_i} \\ 
     \sigma_{I_i \rightarrow I_j}}}
-    K &=& \sum_{i\in\mathbb{Z}} \int_{t=0}^{T} \left[ \rho_{dis} Q_{dis,i}(t) + \right. \\ 
+    K &=& \sum_{i\in\mathbb{Z}} \int_{t=0}^{T} \left[ \rho_{dis}(i) Q_{dis,i}(t) + \right. \\ 
       && \left. \sum_{j\in\mathbb{Z}}\rho_{mob}(i,j)Q_{mob,i,j}(t)  - CQ_{ch,i}(t) \right]\\
     Q_{dis,i}(t) & = & \int_{0}^{1} w_i(x,t) dx \\
     Q_{ch,i}(t) & = & \int_{0}^{1} u_i(x,t) dx \\
     Q_{mob,i,j}(t) & = & \int_{0}^{1}\left( \sigma_{I_i \rightarrow I_j}^\prime(x,t) \right)dx
 \end{eqnarray*}
-Where $\rho_{mob}(i,j)$, $\rho_{dis}$, and $C$ are the fares charged to passengers, the price charged to serve load during outages, and the cost to purchase electricty from the grid, respecitvely.
+Where $\rho_{mob}(i,j)$, $\rho_{dis}(i)$, and $C$ are the fares charged to passengers, the price charged to serve load during outages, and the cost to purchase electricty from the grid, respecitvely.
 
 \subsubsection{Constraints}
 
