@@ -539,7 +539,7 @@ $q_D(x,t)$ & Instantaneous discharging power \\
 $\mathbb{Z}$ & Set of Transportation Network Nodes (I, II, IV) \\
 $T$ & Time horizon of the optimization ($50 min$) \\
 $\rho_{dis}(i)$ & Price of servicing load during power outages by node(\$/kWh) \\
-$\rho_{mob}(i,j)$ & Price of servicing mobility demand from node $i$ to node $j$ (\$/trip/minute) \\
+$\rho_{mob}(i,j)$ & \parbox[t]{\colmargin}{ Price of servicing mobility demand from node $i$ to node $j$ (\$/trip/minute)} \\
 \hline
 \end{tabular}
 \end{table}
@@ -555,13 +555,12 @@ We adopt and extend the scheme developed by \cite{lefloch_pde_2016} for tracking
 \end{eqnarray*}
 
 Where: 
-
 \begin{eqnarray*}
 q_C(x) &=& \frac{7}{E_{max}}\eta\frac{1}{60} \\
 q_D(x) &=& \frac{-7}{E_{max}}\frac{1}{60}
 \end{eqnarray*}
 
-The equations make use of an advection term (when the time derivative is linearly related to the spatial derivative) to represent how SOE changes over time for vehicles the charging or discharging states, with SOE advecting toward 1 or 0, respectively. The model is spatially disaggregated, so the three PDEs are repeated for every node in the system and indexed by $i$.
+The equations make use of an advection term (when the time derivative is linearly related to the spatial derivative) to represent how SOE changes over time for vehicles in the charging or discharging states, with SOE advecting toward 1 or 0, respectively. The model is spatially disaggregated, so the three PDEs are repeated for every node in the system and indexed by $i$.
 
 Flow terms $\sigma_{I_i \rightarrow C_i}(x,t)$ and $\sigma_{I_i \rightarrow D_i}(x,t)$ capture the transport of vehicles between the three distributions within each node. Additional flow terms capture transport between the Idle curves of distinct nodes. For a given node $i$ and any other node $j$, four separate terms are used to represent trips with and without passengers ($\sigma^\prime$ and $\sigma^o$ respectively) and departing trips versus arriving trips ($\sigma_{I_i \rightarrow I_j}$ and $\sigma_{I_j \leftarrow I_i}$ respectively).
 
@@ -575,23 +574,25 @@ The objective of the optimization is to maximize the operational profit of dispa
   \max_{\substack{\sigma_{I_i \rightarrow C_i} \\
     \sigma_{I_i \rightarrow D_i} \\ 
     \sigma_{I_i \rightarrow I_j}}}
-    K &=& \sum_{i\in\mathbb{Z}} \int_{t=0}^{T} \left[ \rho_{dis}(i) Q_{dis,i}(t) + \right. \\ 
-      && \left. \sum_{j\in\mathbb{Z}}\rho_{mob}(i,j)Q_{mob,i,j}(t)  - CQ_{ch,i}(t) \right]\\
-    Q_{dis,i}(t) & = & \int_{0}^{1} w_i(x,t) dx \\
-    Q_{ch,i}(t) & = & \int_{0}^{1} u_i(x,t) dx \\
+    K &=& \sum_{i\in\mathbb{Z}} \int_{t=0}^{T} \left[ \frac{\rho_{dis}(i)}{60} Q_{dis,i}(t) + \right. \\ 
+      && \left. \sum_{j\in\mathbb{Z}}\rho_{mob}(i,j)Q_{mob,i,j}(t)  - \frac{C}{60}Q_{ch,i}(t) \right]dt\\
+    Q_{dis,i}(t) & = & \int_{0}^{1} 7 w_i(x,t) dx \\
+    Q_{ch,i}(t) & = & \int_{0}^{1} 7 u_i(x,t) dx \\
     Q_{mob,i,j}(t) & = & \int_{0}^{1}\left( \sigma_{I_i \rightarrow I_j}^\prime(x,t) \right)dx
 \end{eqnarray*}
-Where $\rho_{mob}(i,j)$, $\rho_{dis}(i)$, and $C$ are the fares charged to passengers, the price charged to serve load during outages, and the cost to purchase electricty from the grid, respecitvely.
+Where $\rho_{mob}(i,j)$, $\rho_{dis}(i)$, and $C$ are the fares charged to passengers, the price charged to serve load during outages, and the cost to purchase electricty from the grid, respecitvely. The constant 60 converts kWh to kW-minutes and the constant 7 is the charging and discharging rate of each vehicle.
 
 \subsubsection{Constraints}
 
-The equations of state are discretized using the Lax-Wendroff method for numerically solving hyperbolic PDEs. They appear in the formulation as a set of equality constraints. In addition to the equations of state there are other constraints on the flows which we use to enforce realistic transport between nodes and the overall conservation of vehicles in the system. 
+The equations of state are discretized using a first-order upwind scheme for numerically solving hyperbolic PDEs. They appear in the formulation as a set of equality constraints. In addition to the equations of state there are other constraints on the flows which we use to enforce realistic transport between nodes and the overall conservation of vehicles in the system. 
 
 Firstly, we constrain the size of the flows between states $u$, $v$, and $w$ to be no greater than the number of vehicles in those states:
 
 \begin{eqnarray*}
     -\sigma_{I_i \rightarrow C_i}(x,t) & <= & u_i(x,t) / \Delta t \\
-    \sigma_{I_i \rightarrow C_i}(x,t) + \sigma_{I_i \rightarrow D_i}(x,t) & <= & v_i(x,t) / \Delta t \\
+  \left\{ \sigma_{I_i \rightarrow C_i}(x,t) + \sigma_{I_i \rightarrow D_i}(x,t) \right. && \\
+  + \sigma_{I_i \rightarrow I_j}^\prime(x,t) + \sigma_{I_i \rightarrow I_j}^o(x,t) && \\
+  \left. - \sigma_{I_i \leftarrow I_j}^\prime(x,t) - \sigma_{I_i \leftarrow I_j}^o(x,t) \right\} & <= & v_i(x,t) / \Delta t \\
     -\sigma_{I_i \rightarrow D_i}(x,t) & <= & w_i(x,t) / \Delta t
 \end{eqnarray*}
 ~\\ 
@@ -854,17 +855,18 @@ We demonstrate a method for simulating a fleet of autonomous PEVs in San Francis
 
 %Later:
 
-\subsection{Discretization}
+%\subsection{Discretization}
 
-\begin{eqnarray*}
-    u_{i,k}^{n+1} &=& u_{i,k}^{n} - \frac{q_C \Delta t}{2 \Delta x}\left(u_{i,k+1}^{n} - u_{i,k-1}^{n} \right) + \\
-    && \frac{(q_C \Delta t)^2}{2 (\Delta x)^2}\left(u_{i,k+1}^{n} - 2u_{i,k}^{n} + u_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow C_i,k}^n \\
-    v_{i,k}^{n+1} &=& v_{i,k}^{n} + \Delta t \sum_{j\in\mathbb{Z}} \left[ \sigma_{I_i \leftarrow I_j,k}^{\prime,n} + \sigma_{I_i \leftarrow I_j,k}^{o,n} \right. \\
-    & & ~~~ \left. - \sigma_{I_i \rightarrow I_j,k}^{\prime,n} - \sigma_{I_i \rightarrow I_j,k}^{o,n} \right] \\
-    && ~~~ - \Delta t \left( \sigma_{I_i \rightarrow C_i,k}^n + \sigma_{I_i \rightarrow D_i,k}^n \right) \\
-    w_{i,k}^{n+1} &=& w_{i,k}^{n} - \frac{q_D \Delta t}{2 \Delta x}\left(w_{i,k+1}^{n} - w_{i,k-1}^{n} \right) + \\
-    && \frac{(q_D \Delta t)^2}{2 (\Delta x)^2}\left(w_{i,k+1}^{n} - 2w_{i,k}^{n} + w_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow D_i,k}^n \\   
-\end{eqnarray*}
+%%%% LAX-WENDROFF IN CASE WE GO BACK THERE %%%%
+%\begin{eqnarray*}
+    %u_{i,k}^{n+1} &=& u_{i,k}^{n} - \frac{q_C \Delta t}{2 \Delta x}\left(u_{i,k+1}^{n} - u_{i,k-1}^{n} \right) + \\
+    %&& \frac{(q_C \Delta t)^2}{2 (\Delta x)^2}\left(u_{i,k+1}^{n} - 2u_{i,k}^{n} + u_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow C_i,k}^n \\
+    %v_{i,k}^{n+1} &=& v_{i,k}^{n} + \Delta t \sum_{j\in\mathbb{Z}} \left[ \sigma_{I_i \leftarrow I_j,k}^{\prime,n} + \sigma_{I_i \leftarrow I_j,k}^{o,n} \right. \\
+    %& & ~~~ \left. - \sigma_{I_i \rightarrow I_j,k}^{\prime,n} - \sigma_{I_i \rightarrow I_j,k}^{o,n} \right] \\
+    %&& ~~~ - \Delta t \left( \sigma_{I_i \rightarrow C_i,k}^n + \sigma_{I_i \rightarrow D_i,k}^n \right) \\
+    %w_{i,k}^{n+1} &=& w_{i,k}^{n} - \frac{q_D \Delta t}{2 \Delta x}\left(w_{i,k+1}^{n} - w_{i,k-1}^{n} \right) + \\
+    %&& \frac{(q_D \Delta t)^2}{2 (\Delta x)^2}\left(w_{i,k+1}^{n} - 2w_{i,k}^{n} + w_{i,k-1}^{n} \right) + \sigma_{I_i \rightarrow D_i,k}^n \\   
+%\end{eqnarray*}
 
 %\begin{eqnarray*}
     %K &=& \sum_{i\in\mathbb{Z}} \int_{t=0}^{T} \left[ \rho_{disch}(Q_{dis,i}(t)) Q_{dis,i}(t) + \right. \\ && \left. \rho_{mob}\left(\sum_{j\in\mathbb{Z}}Q_{mob,i}(t)\right)\sum_{j\in\mathbb{Z}}Q_{mob,i,j}(t) - CQ_{ch,i}(t) \right]\\
