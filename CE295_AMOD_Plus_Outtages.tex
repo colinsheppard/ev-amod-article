@@ -758,43 +758,43 @@ Figure \ref{fig:revenue_bar} presents the revenue earned in each scenario by the
   \label{fig:revenue_bar}
 \end{figure}
 
-Charging costs are almost negligible compared with the revenue earned because the cost of charging (0.25 \%/kWh) is small compared with the revenue earned serving power and trip demand (see Tables \ref{tab:outage_costs} and \ref{tab:trip_costs}).
+Charging costs are almost negligible compared with the revenue earned because the cost of charging (0.25 \$/kWh) is small compared with the revenue earned serving power and trip demand (see Tables \ref{tab:outage_costs} and \ref{tab:trip_costs}).
 
 Next we consider the revenue earned at each node serving power and mobility demand in the Extreme outages scenario, shown in Figure \ref{fig:node_revenue}. Very little revenue is earned at Node I; this is attributable to limited demand for trips and low power demand. Nodes II and IV have higher demand for passenger trips, and experience power outages in the afternoon and morning, respectively.
 
 \begin{figure}[!htbp]
-  \includegraphics[width=\linewidth]{plots/aggregated-revenue-by-node.jpg}
-  \caption{Revenue earned at each node serving power and mobility demand in the Extreme outages scenario with 7.5, 15 and 40 thousand vehicle fleets.}
+  \includegraphics[width=\linewidth]{plots/aggregated-revenue-by-node.pdf}
+  \caption{Revenue earned at each node serving power and mobility demand in the Extreme outages scenario with 7.5, 15,000 and 40,000 vehicle fleets.}
   \label{fig:node_revenue}
 \end{figure}
 
-The revenue peaks at Nodes II and IV, coincide with the power outages at those nodes (see Figure \ref{fig:power_demand}). At Node II, the revenue earned per kWh served (\$9) is small compared with revenue earned serving passenger trips. As such, revenue during the outage at Node II increases only for over-sized fleets (15 and 40 thousand vehicles). 
+The revenue peaks at Nodes II and IV, coincide with the power outages at those nodes (see Figure \ref{fig:power_demand}). At Node II, the revenue earned per kWh served (\$9) is small compared with revenue earned serving passenger trips. As such, revenue during the outage at Node II increases only for over-sized fleets (15,000 and 40,000 vehicles). 
 
 At Node IV, the revenue earned serving power demand is \$15, which is still less than the revenue to be earned serving passenger trips. However, the outage occurs early in the morning, when demand for passenger trips is low. Thus we observe an increase in revenue at Node IV during the outage for all three fleet sizes.
 
 \subsection{Fleet Size and Vehicle Dispatch}
-Next we consider the benefits and drawbacks of different fleet sizes. Nearly all demand for mobility and power can be served with a 40 thousand vehicle fleet in the Extreme scenario, and a 15 thousand vehicle fleet in the Moderate scneario. Figures \ref{fig:time_extreme_40k} and \ref{fig:time_extreme_7500} show the number of vehicles in each state in the Extreme outages scenario with 40 and 7.5 thousand vehicles. States include: in transit with and without passengers, charging, discharging, and idle. 
+Next we consider the benefits and drawbacks of different fleet sizes. Nearly all demand for mobility and power can be served with a 40,000 vehicle fleet in the Extreme scenario, and a 15,000 vehicle fleet in the Moderate scneario. Figures \ref{fig:time_extreme_40k} and \ref{fig:time_extreme_7500} show the number of vehicles in each state in the Extreme outages scenario with 40,000 and 7500 vehicles. States include: in transit with and without passengers, charging, discharging, and idle. 
 
 \begin{figure}[!htbp]
   \includegraphics[width=\linewidth]{plots/states-area-40k.pdf}
-  \caption{Number of vehicles in each state at each time step in the Extreme outages scenario with a 40 thousand vehicle fleet. States include: in transit with and without passengers, charging, discharging, and idle.}
+  \caption{Number of vehicles in each state at each time step in the Extreme outages scenario with a 40,000 vehicle fleet. States include: in transit with and without passengers, charging, discharging, and idle.}
   \label{fig:time_extreme_40k}
 \end{figure}
 
 \begin{figure}[!htbp]
   \includegraphics[width=\linewidth]{plots/states-area-7500.pdf}
-  \caption{Number of vehicles in each state at each time step in the Extreme outages scenario with a 7.5 thousand vehicle fleet. States include: in transit with and without passengers, charging, discharging, and idle.}
+  \caption{Number of vehicles in each state at each time step in the Extreme outages scenario with a 7500 vehicle fleet. States include: in transit with and without passengers, charging, discharging, and idle.}
   \label{fig:time_extreme_7500}
 \end{figure}
 
-Figure \ref{fig:time_extreme_40k} reveals that a 40 thousand vehicle fleet spends most of the simulation in the idle state; the fleet is only fully utilized between 800 and 900 seconds, when demand for power peaks. Low revenue per vehicle in Figure \ref{fig:revenue_bar} provides further evidence that the 40 thousand vehicle fleet is under-utilized. On the other hand, the 7.5 thousand vehicle fleet in \ref{fig:time_extreme_7500} earns less revenue overall, but spends very little time in the idle state. In fact, the vehicles spend more time charging than in any other state; faster charging infrastructure would increase fleet utilization, and should be evaluated as an alternative to increasing the fleet size.
+Figure \ref{fig:time_extreme_40k} reveals that a 40,000 vehicle fleet spends most of the simulation in the idle state; the fleet is only fully utilized between 800 and 900 seconds, when demand for power peaks. Low revenue per vehicle in Figure \ref{fig:revenue_bar} provides further evidence that the 40,000 vehicle fleet is under-utilized. On the other hand, the 7500 vehicle fleet in Figure \ref{fig:time_extreme_7500} earns less revenue overall, but spends very little time in the idle state. In fact, the vehicles spend more time charging than in any other state; faster charging infrastructure would increase fleet utilization, and should be evaluated as an alternative to increasing the fleet size.
 
-In Figure \ref{fig:node_revenue}, the 7.5 thousand vehicle fleet earns less revenue at Node II than the larger fleets for almost the entire simulation. This result suggests that the 7.5 thousand vehicle fleet is under-sized. Figure \ref{fig:time_moderate_15k} shows the dispatch of a 15 thousand vehicle fleet serving mobility only in the Moderate outages scenario. The results indicate that with charging constraints, upwards of 15 thousand vehicles are needed to meet all of the demand for mobility.
+In Figure \ref{fig:node_revenue}, the 7500 vehicle fleet earns less revenue at Node II than the larger fleets for almost the entire simulation. This result suggests that the 7500 vehicle fleet is under-sized. Figure \ref{fig:time_moderate_15k} shows the dispatch of a 15,000 vehicle fleet serving mobility only in the Moderate outages scenario. The results indicate that with charging constraints, upwards of 15,000 vehicles are needed to meet all of the demand for mobility.
 
 \begin{figure}[!htbp]
   \includegraphics[width=\linewidth]{plots/states-area-moderate-15k.pdf}
-  \caption{Number of vehicles in each state at each time step in the Extreme outages scenario with a 15 thousand vehicle fleet. States include: in transit with and without passengers, charging, discharging, and idle.}
-  \label{fig:time_extreme_15k}
+  \caption{Number of vehicles in each state at each time step in the Moderate outages scenario with a 15,000 vehicle fleet. States include: in transit with and without passengers, charging, discharging, and idle.}
+  \label{fig:time_moderate_15k}
 \end{figure}
 
 \section{Discussion}
@@ -803,14 +803,14 @@ The fundamental question underlying the current work is whether on-demand backup
 
 We consider several scenarios for the number of Extreme verses Moderate outage days in a year. We then compute the marginal annual revenue earned serving both power and mobility demand, compared with serving mobility only. We treat the Moderate outages sceanrio as a mobility-only case, as the revenue earned serving power demand in that scenario is negligible. 
 
-We calculate the marginal revenue earned serving power demand by taking the difference between a year with Extreme outages and a year with only Moderate outages for equivalent fleet sizes. The results, summarized in Table \ref{tab:annual_scenarios}, suggest that fleet operators can earn \$1 to \$3 thousand (or between 1\% and 3\%) more revenue per vehicle per year serving power demand during outages, depending on fleet size and the number of major power outages.
+We calculate the marginal revenue earned serving power demand by taking the difference between a year with Extreme outages and a year with only Moderate outages for equivalent fleet sizes. The results, summarized in Table \ref{tab:annual_scenarios}, suggest that fleet operators can earn \$1400-\$3400 (or $\sim$1-3\%) more revenue per vehicle per year serving power demand during outages, depending on fleet size and the number of major power outages.
 
 \begin{threeparttable}[!htbp]
     % increase table row spacing, adjust to taste
     \renewcommand{\arraystretch}{1}
     % if using array.sty, it might be a good idea to tweak the value of
     % \extrarowheight as needed to properly center the text within the cells
-    \caption{Cost of passenger trips per unit energy for each origin-destination pair.}
+    \caption{Increase in annual revenue from serving power demand in addition to mobility for fleet sizes of 7.5k and 15k.}
     \label{tab:annual_scenarios}
     \centering
     \def\colmargin{6.75cm}
@@ -819,15 +819,15 @@ We calculate the marginal revenue earned serving power demand by taking the diff
     \footnotesize{
     \begin{tabular}{p{1cm}p{1cm}p{1cm}p{1cm}p{1cm}}
     \hline
-    \multirow{2}{1cm}{\textbf{Extreme Days}} & \multicolumn{2}{c}{\textbf{Marginal Revenue} (\$/year)} & \multicolumn{2}{c}{\textbf{Marginal Increase} (\%)} \\
-     & 7.5k & 15k & 7.5k & 15k \\
+    \multirow{2}{1cm}{\textbf{Extreme Days}} & \multicolumn{2}{c}{\textbf{New Revenue} (\$/year/vehicle)} & \multicolumn{2}{c}{\textbf{Percent Increase} (\%)} \\
+    &7.5k & 15k & 7.5k & 15k \\
     \hline
-    10 & 1.4 & 2.0 & 0.9 & 1.6 \\
-    12 & 1.7 & 2.3 & 1.0 & 1.8 \\
-    14 & 2.0 & 2.6 & 1.2 & 2.0 \\
-    16\tnote{\textasteriskcentered} & 2.2 & 2.8 & 1.4 & 2.2 \\
-    18 & 2.5 & 3.1 & 1.5 & 2.4 \\
-    20 & 2.8 & 3.4 & 1.7 & 2.6 \\
+    10 & 1400 & 2000 & 0.9 & 1.6 \\
+    12 & 1700 & 2300 & 1.0 & 1.8 \\
+    14 & 2000 & 2600 & 1.2 & 2.0 \\
+    16\tnote{\textasteriskcentered} & 2200 & 2800 & 1.4 & 2.2 \\
+    18 & 2500 & 3100 & 1.5 & 2.4 \\
+    20 & 2800 & 3400 & 1.7 & 2.6 \\
     \hline
     \end{tabular}
       \begin{tablenotes}
@@ -847,12 +847,12 @@ Future work will examine more realistic assumptions around vehicle charing. Exam
 
 \begin{figure}[!htbp]
   \includegraphics[width=\linewidth]{plots/soc_v_time.png}
-  \caption{Aggregate fleet state of charge over time for 7.5, 10, and 15 thousand vehicle fleets in the Moderate outages scenario and 7.5, 15 and 40 thousand vehicle fleets in the Extreme outages scenario.}
+  \caption{Aggregate fleet state of charge over time for 7500, 10,000, and 15,000 vehicle fleets in the Moderate outages scenario and 7500, 15,000 and 40,000 vehicle fleets in the Extreme outages scenario.}
   \label{fig:soe}
 \end{figure}
 
 \section{Summary}
-We demonstrate a method for simulating a fleet of autonomous PEVs in San Francisco dispatched to serve mobility and electricity demand during power outages throughout the city. We use a PDE-based approach to model the aggregate state of energy of fleet as vehicles charge, discharge, and travel throughout the system. We optimize vehicle dispatch over a 50 minute planning horizon, assuming perfect foresight into both mobility and power demand within that time frame. We consider two outage scenarios, including both Moderate and Extreme outages based on real outage data for San Francisco. Finally, we compute the revenue earned in each scenario with various fleet sizes, ranging from 7.5 to 40 thousand vehicles. We find that serving power demand increase fleet revenue by \$2 to \$3 thousand, or 30 to 40\%, in the Extreme outages scenario. Given that power outages are rare, these results translate to between 1 and 3\% more revenue per year, depending on the number of major power outages in a year.
+We demonstrate a method for simulating a fleet of autonomous PEVs in San Francisco dispatched to serve mobility and electricity demand during power outages throughout the city. We use a PDE-based approach to model the aggregate state of energy of fleet as vehicles charge, discharge, and travel throughout the system. We optimize vehicle dispatch over a 50 minute planning horizon, assuming perfect foresight into both mobility and power demand within that time frame. We consider two outage scenarios, including both Moderate and Extreme outages based on real outage data for San Francisco. Finally, we compute the revenue earned in each scenario with various fleet sizes, ranging from 7500 to 40,000 vehicles. We find that serving power demand increase fleet revenue by \$1400-\$3400 per vehicle, or 30-40\%, in the Extreme outages scenario. Given that power outages are rare, these results translate to $\sim$1-3\% more revenue per year, depending on the number of major power outages in a year.
 
 %%%% EXTRA STUFF WE MIGHT WANT LATER
 
