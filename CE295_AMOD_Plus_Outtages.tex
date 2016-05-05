@@ -607,9 +607,12 @@ We also require that as charging vehicles reach an SOE of 1 or as discharging ve
 Next, we require that trips be conserved between origin-destination pairs but shifted in time and SOE.
 
 \begin{eqnarray*}
-    \sigma_{I_i \rightarrow I_j}^\prime(x,t) & = & \sigma_{I_j \leftarrow I_i}^\prime(x - \Delta x_{i,j},t + \Delta t_{i,j}), ~~~ \{(i,j) \in \mathbb{Z} \times \mathbb{Z}\} \\
-     \sigma_{I_i \rightarrow I_j}^o(x,t) & = & \sigma_{I_j \leftarrow I_i}^o(x - \Delta x_{i,j},t + \Delta t_{i,j}), ~~~ \{(i,j) \in \mathbb{Z} \times \mathbb{Z}\}
+    \sigma_{I_i \rightarrow I_j}^\prime(x,t) & = & \sigma_{I_j \leftarrow I_i}^\prime(x - \Delta x_{i,j},t + \Delta t_{i,j}) \\
+     \sigma_{I_i \rightarrow I_j}^o(x,t) & = & \sigma_{I_j \leftarrow I_i}^o(x - \Delta x_{i,j},t + \Delta t_{i,j})
 \end{eqnarray*}
+\begin{equation*}
+\{(i,j) \in \mathbb{Z} \times \mathbb{Z}\} 
+\end{equation*}
 
 ~\\ 
 The values of $\Delta x$ and $\Delta t$ for each node (I, II and IV) are derived empirically based on real San Francisco taxi fare data collected over the course of a month in June 2012. We assume a decline in personal vehicle ownership accompanies deployment of autonomous vehicles. We account for increasing reliance on mobility-on-demand services by scaling travel demand by a factor of 10 relative to 2012. We averaged trip durations and trip distances for trips from each node $i$ to each node $j$, scaling the average distance by 5.05 km/kWh to derive $\Delta x_{i,j}$ and taking the average time as $\Delta t_{i,j}$. The derived values are shown in Table \ref{tab:flow_constraints}.
