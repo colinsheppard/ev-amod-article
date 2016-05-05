@@ -459,7 +459,7 @@
 
 \begin{abstract}
 %\boldmath
-The era of fully autonomous, electrified taxi fleets is rapidly approaching, and with it the opportunity to innovate myriad on-demand services that extend beyond the realm of human mobility. This project envisions a future where autonomous EV fleets can be dispatched as both as a taxi service and a source of on-demand power serving customers during power outages. We develop a PDE-based scheme to manage the optimal dispatch of an autonomous fleet to serve passengers and electric power demand during outages as an additional stream of revenue. We use real world mobility and taxi data from San Francisco for our case study, modeling the optimal dispatch of several fleet sizes over the course of one day; we examine both moderate and extreme outage scenarios. In the moderate scenario, the revenue earned serving power demand is negligible compared with revenue earned serving passenger trips. In the extreme scenario, supplying power accounts for between \$1.5 and \$3.4 million, amounting to between 32\% and 40\% more revenue than is earned serving mobility only, depending on fleet size. While the overall value of providing on-demand power depends on the frequency and severity of power outages, our results show that serving power demand during large-scale outages can provide a substantial value stream, comparable to the value to be earned providing grid services.
+The era of fully autonomous, electrified taxi fleets is rapidly approaching, and with it the opportunity to innovate myriad on-demand services that extend beyond the realm of human mobility. This project envisions a future where autonomous EV fleets can be dispatched as both as a taxi service and a source of on-demand power serving customers during power outages. We develop a PDE-based scheme to manage the optimal dispatch of an autonomous fleet to serve passengers and electric power demand during outages as an additional stream of revenue. We use real world mobility and taxi data from San Francisco for our case study, modeling the optimal dispatch of several fleet sizes over the course of one day; we examine both moderate and extreme outage scenarios. In the moderate scenario, the revenue earned serving power demand is negligible compared with revenue earned serving passenger trips. In the extreme scenario, supplying power accounts for between \$1 and \$2 million, amounting to between 32\% and 40\% more revenue than is earned serving mobility only, depending on fleet size. While the overall value of providing on-demand power depends on the frequency and severity of power outages, our results show that serving power demand during large-scale outages can provide a substantial value stream, comparable to the value to be earned providing grid services.
 \end{abstract}
 % IEEEtran.cls defaults to using nonbold math in the Abstract.
 % This preserves the distinction between vectors and scalars. However,
@@ -628,22 +628,22 @@ The values of $\Delta x$ and $\Delta t$ for each node (I, II and IV) are derived
     \hline
     \textbf{Node Flows ($i$ $\rightarrow$ $j$)} & \textbf{Derived} $\Delta x$ (kWh) & \textbf{Derived} $\Delta t$ (s) \\
     \hline
-    $1\rightarrow1$ & 0.42  & 476.25  \\
-    $1\rightarrow2$ & 0.82  & 791.92  \\
-    $1\rightarrow3$ & 0.83  & 772.85  \\
-    $1\rightarrow4$ & 0.93  & 1004.16  \\
-    $2\rightarrow1$ & 0.84  & 759.65  \\
-    $2\rightarrow2$ & 0.38  & 489.06  \\
-    $2\rightarrow3$ & 1.26  & 992.06  \\
-    $2\rightarrow4$ & 0.77  & 697.79  \\
-    $3\rightarrow1$ & 0.82  & 773.16  \\
-    $3\rightarrow2$ & 1.33  & 1128.86  \\
-    $3\rightarrow3$ & 0.46  & 642.71  \\
-    $3\rightarrow4$ & 0.86  & 813.06  \\
-    $4\rightarrow1$ & 0.93  & 956.37  \\
-    $4\rightarrow2$ & 0.77  & 724.55  \\
-    $4\rightarrow3$ & 0.81  & 663.75  \\
-    $4\rightarrow4$ & 0.37  & 402.56  \\
+    $1\rightarrow1$ & 0.42  & 476  \\
+    $1\rightarrow2$ & 0.82  & 792  \\
+    $1\rightarrow3$ & 0.83  & 773  \\
+    $1\rightarrow4$ & 0.93  & 1000  \\
+    $2\rightarrow1$ & 0.84  & 760  \\
+    $2\rightarrow2$ & 0.38  & 489  \\
+    $2\rightarrow3$ & 1.26  & 992  \\
+    $2\rightarrow4$ & 0.77  & 698  \\
+    $3\rightarrow1$ & 0.82  & 773  \\
+    $3\rightarrow2$ & 1.33  & 1130  \\
+    $3\rightarrow3$ & 0.46  & 643  \\
+    $3\rightarrow4$ & 0.86  & 813  \\
+    $4\rightarrow1$ & 0.93  & 956  \\
+    $4\rightarrow2$ & 0.77  & 725  \\
+    $4\rightarrow3$ & 0.81  & 664  \\
+    $4\rightarrow4$ & 0.37  & 403  \\
     \hline
     \end{tabular}
 \end{table}
@@ -686,31 +686,32 @@ We examine two days of outage data, including one extreme outage scenario (Decem
   \label{fig:power_demand}
 \end{figure}
 
-Finally, we estimate the value of providing backup power on demand (in \$/kWh). To do so, we compute the cost of damages incurred due to outages in each node for both outage scenarios using the ICE Calculator \cite{ice_calculator_2015}, a tool commonly used by electric utilities to estimate the economic benefits of reliability-enhancing measures. Inputs for the damage calculations include: when the outage occurs, the type and size of the affected customers, and the duration of the outage. Table \ref{tab:outage_costs} gives the estimated value of backup power in each node for the two outage scenarios. Although power demand is much higher in the Extreme outages scenario, the cost per kWh is greater in the Moderate outages scenario.
+Finally, we estimate the value of providing backup power on demand. To do so, we compute the cost of damages incurred due to outages in each node for both outage scenarios using the ICE Calculator \cite{ice_calculator_2015}, a tool commonly used by electric utilities to estimate the economic benefits of reliability-enhancing measures. Inputs for the damage calculations include: when the outage occurs, the type and size of the affected customers, and the duration of the outage. Table \ref{tab:outage_costs} gives the estimated value of backup power in each node for the two outage scenarios in \$ per unit energy delivered (kWh) and \$ per time step (10 minutes). Although power demand is much higher in the Extreme outages scenario, the cost per kWh is greater in the Moderate outages scenario.
 
 \begin{table}[!htbp]
     % increase table row spacing, adjust to taste
     \renewcommand{\arraystretch}{1}
     % if using array.sty, it might be a good idea to tweak the value of
     % \extrarowheight as needed to properly center the text within the cells
-    \caption{Cost of power outages in each node for Extreme and Moderate outage scenarios.}
+    \caption{Cost of power outages in each node for Extreme and Moderate outage scenarios per kWh delivered, and per time step (10 minutes).}
     \label{tab:outage_costs}
     \centering
     \def\colmargin{6.75cm}
     % Some packages, such as MDW tools, offer better commands for making tables
     % than the plain LaTeX2e tabular which is used here.
-    \begin{tabular}{lll}
+    \begin{tabular}{lllll}
     \hline
-    \textbf{Node ($i$)} & \textbf{Extreme} (\$/kWh) & \textbf{Moderate} (\$/kWh) \\
+    \multirow{2}{*}{\textbf{Node ($i$)}} & \multicolumn{2}{c}{\textbf{Extreme}} & \multicolumn{2}{c}{\textbf{Moderate}} \\
+     & (\$/kWh) & (\$/time step) & (\$/kWh) & (\$/time step) \\
     \hline
-    I & 20 & 14 \\
-    II & 9  & 32 \\
-    IV & 15 & 46 \\
+    I  & 20 & 23 & 14 & 16 \\
+    II & 9  & 11 & 32 & 37 \\
+    IV & 15 & 18 & 46 & 54 \\
     \hline
     \end{tabular}
 \end{table}
 
-For comparison, Table \ref{tab:trip_costs} lists the fares associated with passenger trips to and from each node in terms of dollars per unit energy consumed (or \$ per kWh). These fares are empirically derived from the San Francisco taxi data. The value earned per kWh serving passenger trips is remarkably similar to the value earned per kWh of power demand served.
+For comparison, Table \ref{tab:trip_costs} lists the fares associated with passenger trips to and from each node in terms of dollars per unit energy consumed (or \$ per time step). These fares are empirically derived from the San Francisco taxi data. The value earned per kWh serving passenger trips is remarkably similar to the value earned per kWh of power demand served.
 
 \begin{table}[!htbp]
     % increase table row spacing, adjust to taste
@@ -723,19 +724,20 @@ For comparison, Table \ref{tab:trip_costs} lists the fares associated with passe
     \def\colmargin{6.75cm}
     % Some packages, such as MDW tools, offer better commands for making tables
     % than the plain LaTeX2e tabular which is used here.
-    \begin{tabular}{lll}
+    \begin{tabular}{llll}
     \hline
-    \textbf{Origin} & \textbf{Destination} & \textbf{Cost} (\$/kWh) \\
+    \multirow{2}{*}{\textbf{Origin}} & \multirow{2}{*}{\textbf{Destination}} & \multicolumn{2}{c}{\textbf{Cost}} \\
+     &  & \$/kWh & \$/time step \\
     \hline
-    I  & I  & 25 \\
-    I  & II & 19 \\
-    I  & IV & 20 \\
-    II & I  & 18 \\
-    II & II & 26 \\
-    II & IV & 19 \\
-    IV & I  & 20 \\
-    IV & II & 19 \\
-    IV & IV & 24 \\
+    I  & I  & 25 & 11 \\
+    I  & II & 19 & 8 \\
+    I  & IV & 20 & 9 \\
+    II & I  & 18 & 8 \\
+    II & II & 26 & 10 \\
+    II & IV & 19 & 7 \\
+    IV & I  & 20 & 9 \\
+    IV & II & 19 & 7 \\
+    IV & IV & 24 & 9 \\
     \hline
     \end{tabular}
 \end{table}
@@ -754,7 +756,7 @@ Figure \ref{fig:revenue_bar} presents the revenue earned in each scenario by the
 
 Charging costs are almost negligible compared with the revenue earned because the cost of charging (0.25 \%/kWh) is small compared with the revenue earned serving power and trip demand (see Tables \ref{tab:outage_costs} and \ref{tab:trip_costs}).
 
-Next we consider the revenue earned at each node serving power and mobility demand in the Extreme outages scenario, shown in Figure \ref{fig:node_revenue}. Very little revenue is earned at Node I; this is attributable to limited demand for trips, low power demand, and low revenue per kWh of power demand served. Nodes II and IV have higher demand for passenger trips, and experience power outages in the afternoon and morning, respectively.
+Next we consider the revenue earned at each node serving power and mobility demand in the Extreme outages scenario, shown in Figure \ref{fig:node_revenue}. Very little revenue is earned at Node I; this is attributable to limited demand for trips and low power demand. Nodes II and IV have higher demand for passenger trips, and experience power outages in the afternoon and morning, respectively.
 
 \begin{figure}[!htbp]
   \includegraphics[width=\linewidth]{plots/aggregated-revenue-by-node.jpg}
@@ -781,7 +783,7 @@ Next we consider the benefits and drawbacks of different fleet sizes. Nearly all
   \label{fig:time_extreme_7500}
 \end{figure}
 
-Figure \ref{fig:time_extreme_40k} reveals that a 40 thousand vehicle fleet spends most of the simulation in the idle state; the fleet is only fully utilized between 800 and 900 seconds, when demand for power peaks. Low revenue per vehicle in Figure \ref{fig:revenue_bar} provides further evidence that the 40 thousand vehicle fleet is under-utilized. On the other hand, the 7.5 thousand vehicle fleet in \ref{fig:time_extreme_7500} earns less revenue overall, but spends very little time in the idle state. In fact, the vehicles spend more time charging than in any other state; faster charging infrastructure would increase fleet utilization, and should be evaluated as an alterantive to increasing the fleet size.
+Figure \ref{fig:time_extreme_40k} reveals that a 40 thousand vehicle fleet spends most of the simulation in the idle state; the fleet is only fully utilized between 800 and 900 seconds, when demand for power peaks. Low revenue per vehicle in Figure \ref{fig:revenue_bar} provides further evidence that the 40 thousand vehicle fleet is under-utilized. On the other hand, the 7.5 thousand vehicle fleet in \ref{fig:time_extreme_7500} earns less revenue overall, but spends very little time in the idle state. In fact, the vehicles spend more time charging than in any other state; faster charging infrastructure would increase fleet utilization, and should be evaluated as an alternative to increasing the fleet size.
 
 In Figure \ref{fig:node_revenue}, the 7.5 thousand vehicle fleet earns less revenue at Node II than the larger fleets for almost the entire simulation. This result suggests that the 7.5 thousand vehicle fleet is under-sized. Figure \ref{fig:time_moderate_15k} shows the dispatch of a 15 thousand vehicle fleet serving mobility only in the Moderate outages scenario. The results indicate that with charging constraints, upwards of 15 thousand vehicles are needed to meet all of the demand for mobility.
 
@@ -846,7 +848,7 @@ Future work will examine more realistic assumptions around vehicle charing. Exam
 \end{figure}
 
 \section{Summary}
-
+We demonstrate a method for simulating a fleet of autonomous PEVs in San Francisco dispatched to serve mobility and electricity demand during power outages throughout the city. We use a PDE-based approach to model the aggregate state of energy of fleet as vehicles charge, discharge, and travel throughout the system. We optimize vehicle dispatch over a 50 minute planning horizon, assuming perfect foresight into both mobility and power demand within that time frame. We consider two outage scenarios, including both Moderate and Extreme outages based on real outage data for San Francisco. Finally, we compute the revenue earned in each scenario with various fleet sizes, ranging from 7.5 to 40 thousand vehicles. We find that serving power demand increase fleet revenue by \$2 to \$3 thousand, or 30 to 40\%, in the Extreme outages scenario. Given that power outages are rare, these results translate to between 1 and 3\% more revenue per year, depending on the number of major power outages in a year.
 
 %%%% EXTRA STUFF WE MIGHT WANT LATER
 
