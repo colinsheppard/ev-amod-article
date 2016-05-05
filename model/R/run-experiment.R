@@ -1,4 +1,4 @@
-load.libraries(c('optparse','yaml','lpSolve','lpSolveAPI','plyr','stringr','ggplot2','R.utils'))
+load.libraries(c('optparse','yaml','lpSolve','lpSolveAPI','plyr','stringr','ggplot2','R.utils','reshape'))
 source(pp(ev.amod.model,'model/R/misc-functions.R'))
 
 option_list <- list(
@@ -8,8 +8,8 @@ if(interactive()){
   args<-'C:\\Users\\bsj12_000\\Google Drive\\CE295/ev-amod-outtages/model/inputs/exp.yaml'
   #args<-pp(ev.amod.shared,'/model/inputs/tiny/tiny.yaml')
   #args<-pp(ev.amod.shared,'/model/inputs/moderate/moderate.yaml')
-  args<-pp(ev.amod.shared,'/model/inputs/moderate-colin/moderate.yaml')
-  #args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme.yaml')
+  #args<-pp(ev.amod.shared,'/model/inputs/moderate-colin/moderate.yaml')
+  args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme.yaml')
   #args<-pp(ev.amod.shared,'/model/inputs/extreme-colin/extreme-small-battery.yaml')
   args <- parse_args(OptionParser(option_list = option_list,usage = "autonomous-sim.R [experiment YAML file]"),positional_arguments=T,args=args)
   exp.dirs <- args$args

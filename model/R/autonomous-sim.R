@@ -489,12 +489,12 @@ ev.amod.sim.horizon <- function(params,the.timeout=100,t.initial=0,final.solutio
   final.solution
 }
 
-recovery.dir <- head(tail(str_split(exp$OutputsDirectory,"/")[[1]],2),1)
+#recovery.dir <- head(tail(str_split(exp$OutputsDirectory,"/")[[1]],2),1)
 #final.solution <- ev.amod.sim.horizon(params,fleet.correct=T)
-#animate.soln(final.solution)
-#post.process(recovery.dir)
-
-recovery.dir <- 'ModerateColin-2016-05-01_16-28-30'
+##animate.soln(final.solution)
+##post.process(recovery.dir)
+##recovery.dir <- 'ModerateColin-2016-05-01_16-28-30'
+##recovery.dir <- 'ModerateColin-2016-05-01_16-25-33'
 
 #exp$OutputsDirectory <- pp(pp(head(str_split(exp$OutputsDirectory,"/")[[1]],-2),collapse="/"),"/",recovery.dir,"/")
 #load(file=pp(exp$OutputsDirectory,'params.Rdata'))
@@ -513,7 +513,24 @@ recovery.dir <- 'ModerateColin-2016-05-01_16-28-30'
                                       #final.solution=final.solution,prev.solution=working.solution,
                                       #prev.params=prev.params,the.timeout=90,fleet.correct=T)
 
-#t.initial<-max(final.solution$t)+params$dt 
-#prev.solution<-working.solution
-#the.timeout<-60
-#fleet.correct<-T
+##t.initial<-max(final.solution$t)+params$dt 
+##prev.solution<-working.solution
+##the.timeout<-60
+##fleet.correct<-T
+
+num.veh <- list()
+for(recovery.dir in grep('Icon',list.files(pp(ev.amod.shared,'/model/successful-runs/')),invert=T,value=T)){
+  #post.process(recovery.dir)
+  #money.animation(recovery.dir)
+  num.veh[[length(num.veh)+1]] <- vehicle.states(recovery.dir)
+  #num.veh[[length(num.veh)]][,scenario:=recovery.dir]
+}
+num.veh <- rbindlist(num.veh)
+num.veh[grep('Extreme',scenario),scen:='Extreme']
+num.veh[grep('Moderate',scenario),scen:='Moderate']
+num.veh[,n:=sum(num.corrected),by=c('t','scenario')]
+num.veh[n==15005,n:=15000]
+ggplot(num.veh,aes(x=t,y=num.corrected,fill=var))+geom_area()+labs(x="Minute",y="# Vehicles",fill="Vehicle State",colour=NULL)+facet_grid(scen~n)
+
+num.veh.sum <- num.veh[,list(veh.hours=sum(num.corrected*10/60)),by=c('scen','n','var')]
+ggplot(num.veh.sum[n<20e3],aes(x=factor(n),y=veh.hours/1e3,fill=var))+geom_bar(stat='identity')+labs(x="Fleet Size",y="1000's Vehicle-Hours",fill="Vehicle State")+facet_wrap(~scen)
